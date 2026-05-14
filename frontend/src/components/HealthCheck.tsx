@@ -33,29 +33,29 @@ function HealthCheck() {
       <button
         onClick={checkHealth}
         disabled={loading}
-        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-violet-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-lg hover:shadow-purple-600/40"
+        className="px-6 py-3 bg-room-primary text-white rounded-room font-semibold transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed btn-glow"
       >
-        {loading ? '🔄 Verificando...' : '✓ Verificar Backend'}
+        {loading ? '🔄 Sincronizando...' : '✓ Iniciar Validación'}
       </button>
 
       {error && (
-        <div className="p-4 rounded-lg border-l-4 bg-red-50 border-red-500 text-red-900">
-          <strong>❌ Error de Conexión</strong>
-          <p className="mt-2">{error}</p>
+        <div className="p-4 rounded-room border-l-4 bg-room-error/10 border-room-error text-room-error">
+          <strong>❌ Error de Protocolo</strong>
+          <p className="mt-2 text-white/80">{error}</p>
           <p className="text-sm opacity-75 mt-2">
-            Asegúrate que el backend está corriendo en http://localhost:8080<br/>
-            Ejecuta: <code className="bg-red-100 px-2 py-1 rounded font-mono">mvn spring-boot:run</code>
+            Verifique el estado del servidor backend (8080)<br/>
+            Comando: <code className="bg-room-error/20 px-2 py-1 rounded font-mono text-white">mvn spring-boot:run</code>
           </p>
         </div>
       )}
 
       {data && (
-        <div className="p-4 rounded-lg border-l-4 bg-green-50 border-green-500 text-green-900">
-          <strong>✅ Conexión Exitosa</strong>
-          <p className="mt-2">
+        <div className="p-4 rounded-room border-l-4 bg-room-success/10 border-room-success text-room-success">
+          <strong>✅ Validación Exitosa</strong>
+          <p className="mt-2 text-white/80">
             <span className="font-semibold">Estado:</span> {data.status}
           </p>
-          <p className="mt-1">{data.message}</p>
+          <p className="mt-1 text-white/80">{data.message}</p>
         </div>
       )}
     </div>

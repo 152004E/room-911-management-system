@@ -12,19 +12,28 @@ function Header() {
   }, [])
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 border-b-4 border-purple-600 shadow-md backdrop-blur">
+    <header className="sticky top-0 z-50 glass border-b border-white/10">
       <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center gap-8">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-violet-700 bg-clip-text text-transparent">🏨 ROOM 911</h1>
+        <h1 className="text-3xl font-bold text-room-primary">🏨 ROOM 911</h1>
         
-        <div className="flex items-center gap-3 text-sm font-semibold">
+        <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest">
           {isConnected === null && (
-            <span className="inline-block mr-2 font-semibold text-yellow-600 animate-pulse">⏳ Conectando...</span>
+            <span className="flex items-center gap-2 text-white/50">
+              <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+              SINCRONIZANDO...
+            </span>
           )}
           {isConnected && (
-            <span className="inline-block mr-2 font-semibold text-green-600">✅ Backend OK</span>
+            <span className="flex items-center gap-2 text-room-success">
+              <span className="w-2 h-2 rounded-full bg-room-success"></span>
+              PROTOCOLO EN LÍNEA
+            </span>
           )}
           {isConnected === false && (
-            <span className="inline-block mr-2 font-semibold text-red-600">❌ Backend Desconectado</span>
+            <span className="flex items-center gap-2 text-room-error">
+              <span className="w-2 h-2 rounded-full bg-room-error"></span>
+              FALLO DE ENLACE
+            </span>
           )}
         </div>
       </div>

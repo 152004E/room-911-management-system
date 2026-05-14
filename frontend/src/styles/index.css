@@ -1,27 +1,33 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
 
 @theme {
-  --color-primary-50: #f8f6ff;
-  --color-primary-100: #f0ecff;
-  --color-primary-200: #ddd7ff;
-  --color-primary-300: #c9b8ff;
-  --color-primary-400: #b094ff;
-  --color-primary-500: #9370ff;
-  --color-primary-600: #7c3aed;
-  --color-primary-700: #6d28d9;
-  --color-primary-800: #5b21b6;
-  --color-primary-900: #3d0a7a;
-
-  --color-secondary-50: #faf8f3;
-  --color-secondary-100: #f5f1e8;
-  --color-secondary-200: #e8dccf;
-  --color-secondary-300: #dbc6b6;
-  --color-secondary-400: #c4a894;
-  --color-secondary-500: #ad8a72;
-  --color-secondary-600: #764ba2;
-  --color-secondary-700: #5a3a7d;
-  --color-secondary-800: #432956;
-  --color-secondary-900: #2c1b3a;
-
-  --font-sans: "Segoe UI", "Tahoma", "Geneva", "Verdana", sans-serif;
+  --color-room-dark: #081425;
+  --color-room-primary: #2563EB;
+  --color-room-success: #10FB72;
+  --color-room-error: #FF3131;
+  --color-room-card: rgba(30, 41, 59, 0.7);
+  
+  --font-sans: "Inter", system-ui, sans-serif;
+  
+  --radius-room: 8px;
+  
+  --shadow-glow: 0 0 15px rgba(37, 99, 235, 0.4);
 }
+
+@layer base {
+  body {
+    @apply bg-room-dark text-white font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-room-card backdrop-blur-md border border-white/10 shadow-lg;
+  }
+  
+  .btn-glow {
+    @apply shadow-glow transition-all duration-300 hover:brightness-110;
+  }
+}
+
