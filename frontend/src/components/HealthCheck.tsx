@@ -3,6 +3,7 @@ import { useState } from 'react'
 interface HealthResponse {
   status: string;
   message: string;
+  dbStatus: string;
 }
 
 function HealthCheck() {
@@ -52,10 +53,15 @@ function HealthCheck() {
       {data && (
         <div className="p-4 rounded-room border-l-4 bg-room-success/10 border-room-success text-room-success">
           <strong>✅ Validación Exitosa</strong>
-          <p className="mt-2 text-white/80">
-            <span className="font-semibold">Estado:</span> {data.status}
-          </p>
-          <p className="mt-1 text-white/80">{data.message}</p>
+          <div className="mt-2 space-y-1 text-white/80">
+            <p><span className="font-semibold">Backend:</span> {data.status}</p>
+            <p><span className="font-semibold">Base de Datos:</span> 
+              <span className={data.dbStatus === 'CONNECTED' ? 'text-room-success ml-2' : 'text-room-error ml-2'}>
+                {data.dbStatus}
+              </span>
+            </p>
+            <p className="text-xs opacity-50 italic mt-2">{data.message}</p>
+          </div>
         </div>
       )}
     </div>

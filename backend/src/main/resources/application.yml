@@ -14,9 +14,9 @@ spring:
   
   # DataSource PostgreSQL
   datasource:
-    url: jdbc:postgresql://localhost:5432/room911_db
-    username: room911_user
-    password: your_secure_password_here
+    url: jdbc:postgresql://localhost:5432/room_911
+    username: postgres
+    password: postgres
     driver-class-name: org.postgresql.Driver
 
 # Server Configuration

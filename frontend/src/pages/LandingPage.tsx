@@ -43,9 +43,9 @@ function LandingPage() {
                 <span className="inline-block mr-2 text-room-primary animate-pulse">●</span>
                 <span className="font-medium">Servidor Backend: Spring Boot 3.5.14</span>
               </li>
-              <li className="flex items-center p-3 bg-white/5 rounded-room border-l-4 border-room-error">
-                <span className="inline-block mr-2 text-room-error">●</span>
-                <span className="font-medium">Base de Datos: PostgreSQL (Sin Conexión)</span>
+              <li className="flex items-center p-3 bg-white/5 rounded-room border-l-4 border-room-primary">
+                <span className="inline-block mr-2 text-room-primary animate-pulse">●</span>
+                <span className="font-medium">Base de Datos: PostgreSQL (Pendiente de Validación)</span>
               </li>
             </ul>
           </section>
