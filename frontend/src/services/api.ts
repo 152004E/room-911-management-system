@@ -5,15 +5,15 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
 
-export const apiCall = async (endpoint, options = {}) => {
+export const apiCall = async <T = any>(endpoint: string, options: RequestInit = {}): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`
 
   const config = {
+    ...options,
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
     },
-    ...options,
   }
 
   try {
@@ -32,10 +32,10 @@ export const apiCall = async (endpoint, options = {}) => {
 
 // Métodos auxiliares para requests comunes
 export const api = {
-  get: (endpoint) => apiCall(endpoint, { method: 'GET' }),
-  post: (endpoint, body) => apiCall(endpoint, { method: 'POST', body: JSON.stringify(body) }),
-  put: (endpoint, body) => apiCall(endpoint, { method: 'PUT', body: JSON.stringify(body) }),
-  delete: (endpoint) => apiCall(endpoint, { method: 'DELETE' }),
+  get: <T = any>(endpoint: string) => apiCall<T>(endpoint, { method: 'GET' }),
+  post: <T = any>(endpoint: string, body: any) => apiCall<T>(endpoint, { method: 'POST', body: JSON.stringify(body) }),
+  put: <T = any>(endpoint: string, body: any) => apiCall<T>(endpoint, { method: 'PUT', body: JSON.stringify(body) }),
+  delete: <T = any>(endpoint: string) => apiCall<T>(endpoint, { method: 'DELETE' }),
 }
 
 export default api

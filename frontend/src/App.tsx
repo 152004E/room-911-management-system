@@ -39,7 +39,7 @@ function App() {
               Count is {count}
             </button>
             <p className="text-gray-600">
-              Edit <code className="bg-gray-100 px-2 py-1 rounded font-mono text-purple-600">src/App.jsx</code> and save to test hot reload.
+              Edit <code className="bg-gray-100 px-2 py-1 rounded font-mono text-purple-600">src/App.tsx</code> and save to test hot reload.
             </p>
           </div>
         </section>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 function Header() {
-  const [isConnected, setIsConnected] = useState(null)
+  const [isConnected, setIsConnected] = useState<boolean | null>(null)
 
   useEffect(() => {
     // Verificar conectividad al backend al cargar

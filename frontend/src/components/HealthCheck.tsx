@@ -1,9 +1,14 @@
 import { useState } from 'react'
 
+interface HealthResponse {
+  status: string;
+  message: string;
+}
+
 function HealthCheck() {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
+  const [data, setData] = useState<HealthResponse | null>(null)
 
   const checkHealth = async () => {
     setLoading(true)
@@ -15,8 +20,8 @@ function HealthCheck() {
       }
       const result = await response.json()
       setData(result)
-    } catch (err) {
-      setError(err.message)
+    } catch (err: any) {
+      setError(err.message || 'Error desconocido')
       console.error('Error al conectar con backend:', err)
     } finally {
       setLoading(false)
