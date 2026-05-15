@@ -1,14 +1,38 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '../../components/globalcomponent/Input';
 import { Button } from '../../components/globalcomponent/Button';
 import { Card } from '../../components/globalcomponent/Card';
 import { SecurityModal } from '../../components/auth/SecurityModal';
 import { faEnvelope, faKey, faRightToBracket, faShieldHalved } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { authApi } from '../../services/api';
 
 const LoginPage = () => {
   const [showSecurityModal, setShowSecurityModal] = useState(true);
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const response = await authApi.login({ identifier, password });
+      if (response.token) {
+        localStorage.setItem('token', response.token);
+        navigate('/admin/dashboard');
+      }
+    } catch (err) {
+      setError('Credenciales inválidas. Acceso denegado.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <>
@@ -33,13 +57,20 @@ const LoginPage = () => {
           <p className="text-xs text-white/40 font-medium">Por favor, proporcione las credenciales administrativas</p>
         </div>
 
-        <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+        <form className="space-y-6" onSubmit={handleLogin}>
+          {error && (
+            <div className="bg-room-error/10 border border-room-error text-room-error text-xs p-3 rounded text-center font-bold tracking-widest uppercase">
+              {error}
+            </div>
+          )}
           <Input 
-            id="email"
+            id="identifier"
             label="IDENTIFICADOR"
-            type="number"
-            placeholder="123456789"
+            type="text"
+            placeholder="admin"
             icon={faEnvelope}
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
             required
           />
           
@@ -49,6 +80,8 @@ const LoginPage = () => {
             type="password"
             placeholder="••••••••••••"
             icon={faKey}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             required
           />
 
@@ -70,10 +103,11 @@ const LoginPage = () => {
 
           <Button 
             type="submit"
-            text="ESTABLECER CONEXIÓN"
+            text={isLoading ? "AUTENTICANDO..." : "ESTABLECER CONEXIÓN"}
             iconRight={faRightToBracket}
             variant="primary"
             className="w-full py-3 text-xs uppercase tracking-widest font-bold"
+            disabled={isLoading}
           />
         </form>
         <div className="mt-4 text-center">
