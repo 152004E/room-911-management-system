@@ -24,6 +24,7 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     @Override
     public AdminUserDTO findById(Long id) {
+        if (id == null) return null;
         return adminUserRepository.findById(id)
                 .map(this::toDTO)
                 .orElse(null);
@@ -33,7 +34,8 @@ public class AdminUserServiceImpl implements AdminUserService {
     public AdminUserDTO save(AdminUserDTO adminUserDTO) {
         // Nota: El hash del password debería manejarse aquí o en el controller con un encoder
         AdminUser adminUser = toEntity(adminUserDTO);
-        return toDTO(adminUserRepository.save(adminUser));
+        AdminUser saved = adminUserRepository.save(adminUser);
+        return toDTO(saved);
     }
 
     private AdminUserDTO toDTO(AdminUser adminUser) {

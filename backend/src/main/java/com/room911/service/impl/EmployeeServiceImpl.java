@@ -29,6 +29,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public EmployeeDTO findById(Long id) {
+        if (id == null) return null;
         return employeeRepository.findById(id)
                 .map(this::toDTO)
                 .orElse(null);
@@ -37,15 +38,22 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public EmployeeDTO save(EmployeeDTO employeeDTO) {
         Employee employee = toEntity(employeeDTO);
-        Department department = departmentRepository.findById(employeeDTO.getDepartmentId())
+        Long departmentId = employeeDTO.getDepartmentId();
+        if (departmentId == null) {
+            throw new RuntimeException("Department ID is required");
+        }
+        Department department = departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new RuntimeException("Department not found"));
         employee.setDepartment(department);
-        return toDTO(employeeRepository.save(employee));
+        Employee saved = employeeRepository.save(employee);
+        return toDTO(saved);
     }
 
     @Override
     public void deleteById(Long id) {
-        employeeRepository.deleteById(id);
+        if (id != null) {
+            employeeRepository.deleteById(id);
+        }
     }
 
     @Override

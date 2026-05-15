@@ -30,16 +30,19 @@ public class AccessLogServiceImpl implements AccessLogService {
     @Override
     public AccessLogDTO save(AccessLogDTO accessLogDTO) {
         AccessLog accessLog = toEntity(accessLogDTO);
-        if (accessLogDTO.getEmployeeId() != null) {
-            Employee employee = employeeRepository.findById(accessLogDTO.getEmployeeId())
+        Long employeeId = accessLogDTO.getEmployeeId();
+        if (employeeId != null) {
+            Employee employee = employeeRepository.findById(employeeId)
                     .orElse(null);
             accessLog.setEmployee(employee);
         }
-        return toDTO(accessLogRepository.save(accessLog));
+        AccessLog saved = accessLogRepository.save(accessLog);
+        return toDTO(saved);
     }
 
     @Override
     public List<AccessLogDTO> findByEmployeeId(Long employeeId) {
+        if (employeeId == null) return List.of();
         return accessLogRepository.findByEmployeeId(employeeId).stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());

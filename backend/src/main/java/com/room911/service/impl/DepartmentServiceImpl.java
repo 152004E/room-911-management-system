@@ -24,6 +24,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     public DepartmentDTO findById(Long id) {
+        if (id == null) return null;
         return departmentRepository.findById(id)
                 .map(this::toDTO)
                 .orElse(null);
@@ -32,12 +33,15 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     public DepartmentDTO save(DepartmentDTO departmentDTO) {
         Department department = toEntity(departmentDTO);
-        return toDTO(departmentRepository.save(department));
+        Department saved = departmentRepository.save(department);
+        return toDTO(saved);
     }
 
     @Override
     public void deleteById(Long id) {
-        departmentRepository.deleteById(id);
+        if (id != null) {
+            departmentRepository.deleteById(id);
+        }
     }
 
     private DepartmentDTO toDTO(Department department) {

@@ -29,5 +29,28 @@
   .btn-glow {
     @apply shadow-glow transition-all duration-300 hover:brightness-110;
   }
+
+  .bg-login-pattern {
+    background-image: radial-gradient(circle at center, rgba(37, 99, 235, 0.05) 0%, transparent 70%),
+                      linear-gradient(to bottom right, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 1));
+    background-size: cover;
+    background-position: center;
+  }
+  
+  .molecule-bg {
+    background-image: url('data:image/svg+xml;utf8,<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"><path d="M200 100 L250 150 L250 250 L200 300 L150 250 L150 150 Z" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="2"/><circle cx="200" cy="100" r="10" fill="rgba(37,99,235,0.1)"/><circle cx="250" cy="150" r="10" fill="rgba(37,99,235,0.1)"/><circle cx="250" cy="250" r="10" fill="rgba(37,99,235,0.1)"/><circle cx="200" cy="300" r="10" fill="rgba(37,99,235,0.1)"/><circle cx="150" cy="250" r="10" fill="rgba(37,99,235,0.1)"/><circle cx="150" cy="150" r="10" fill="rgba(37,99,235,0.1)"/></svg>');
+    background-repeat: repeat;
+  }
+
+  /* Hide spin-buttons for number inputs */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
 }
 
