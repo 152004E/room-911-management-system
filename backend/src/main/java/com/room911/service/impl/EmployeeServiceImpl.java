@@ -38,6 +38,19 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public EmployeeDTO save(EmployeeDTO employeeDTO) {
         Employee employee = toEntity(employeeDTO);
+        
+        // Generación automática de Internal ID si es nuevo
+        if (employee.getId() == null) {
+            long count = employeeRepository.count();
+            String nextId = String.format("%04d", count + 1);
+            // Asegurarnos que sea único
+            while (employeeRepository.findByInternalId(nextId).isPresent()) {
+                count++;
+                nextId = String.format("%04d", count + 1);
+            }
+            employee.setInternalId(nextId);
+        }
+        
         Long departmentId = employeeDTO.getDepartmentId();
         if (departmentId == null) {
             throw new RuntimeException("Department ID is required");

@@ -15,6 +15,9 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Autowired
     private AdminUserRepository adminUserRepository;
 
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
     @Override
     public List<AdminUserDTO> findAll() {
         return adminUserRepository.findAll().stream()
@@ -32,9 +35,30 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     @Override
     public AdminUserDTO save(AdminUserDTO adminUserDTO) {
-        // Nota: El hash del password debería manejarse aquí o en el controller con un encoder
         AdminUser adminUser = toEntity(adminUserDTO);
-        @SuppressWarnings("null")
+        
+        // Generación automática de ID si es un usuario nuevo
+        if (adminUser.getId() == null) {
+            long count = adminUserRepository.count();
+            String nextId = String.format("A%04d", count + 1);
+            // Asegurarnos que sea único si hubo borrados
+            while (adminUserRepository.findByUsername(nextId).isPresent()) {
+                count++;
+                nextId = String.format("A%04d", count + 1);
+            }
+            adminUser.setUsername(nextId);
+        }
+
+        // Si tiene password (es creación o actualización de password), lo encriptamos
+        if (adminUserDTO.getPassword() != null && !adminUserDTO.getPassword().isEmpty()) {
+            adminUser.setPasswordHash(passwordEncoder.encode(adminUserDTO.getPassword()));
+        } else if (adminUser.getId() != null) {
+            // Si es actualización y no hay password, mantenemos el anterior
+            adminUserRepository.findById(adminUser.getId()).ifPresent(old -> {
+                adminUser.setPasswordHash(old.getPasswordHash());
+            });
+        }
+
         AdminUser saved = adminUserRepository.save(adminUser);
         return toDTO(saved);
     }
@@ -43,6 +67,9 @@ public class AdminUserServiceImpl implements AdminUserService {
         return AdminUserDTO.builder()
                 .id(adminUser.getId())
                 .username(adminUser.getUsername())
+                .email(adminUser.getEmail())
+                .fullName(adminUser.getFullName())
+                .phone(adminUser.getPhone())
                 .role(adminUser.getRole())
                 .isActive(adminUser.getIsActive())
                 .createdAt(adminUser.getCreatedAt())
@@ -53,6 +80,9 @@ public class AdminUserServiceImpl implements AdminUserService {
         return AdminUser.builder()
                 .id(dto.getId())
                 .username(dto.getUsername())
+                .email(dto.getEmail())
+                .fullName(dto.getFullName())
+                .phone(dto.getPhone())
                 .role(dto.getRole())
                 .isActive(dto.getIsActive())
                 .build();

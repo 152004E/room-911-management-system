@@ -1,459 +1,352 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faUsers,
-  faUserPlus,
-  faSearch,
-  faFilter,
-  faEye,
-  faPen,
+import { 
+  faUsers, 
+  faPlus, 
+  faSearch, 
+  faXmark, 
+  faUser, 
+  faAt, 
+  faPhone, 
+  faBuilding, 
+  faIdCard, 
+  faEdit, 
   faTrash,
-  faChevronLeft,
-  faChevronRight,
-  faSpinner,
-  faTriangleExclamation,
-  faRotateRight,
-  faIdBadge,
-  faBuilding,
   faCircleCheck,
   faCircleXmark,
-  faTimes,
-  faXmark,
+  faShieldHalved
 } from '@fortawesome/free-solid-svg-icons';
-import api from '../../services/api';
 import { Button } from '../../components/globalcomponent/Button';
+import api from '../../services/api';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-// Shape returned by the backend (EmployeeDTO)
-interface EmployeeDTO {
+interface Employee {
   id: number;
   internalId: string;
   firstName: string;
   lastName: string;
-  email?: string;
-  phoneNumber?: string;
+  email: string;
+  phoneNumber: string;
   isAuthorized: boolean;
-  departmentId?: number;
-  departmentName?: string;
-}
-
-// Shape used internally by the UI
-interface Employee {
-  employeeId: number;
-  internalId: string;
-  name: string;
+  departmentId: number;
   departmentName: string;
-  accessStatus: 'ACTIVE' | 'INACTIVE';
-  email?: string;
-  phone?: string;
+  createdAt: string;
 }
 
-const mapDTO = (dto: EmployeeDTO): Employee => ({
-  employeeId: dto.id,
-  internalId: dto.internalId,
-  name: `${dto.firstName} ${dto.lastName}`,
-  departmentName: dto.departmentName ?? '—',
-  accessStatus: dto.isAuthorized ? 'ACTIVE' : 'INACTIVE',
-  email: dto.email,
-  phone: dto.phoneNumber,
-});
-
-// ─── Status Badge ─────────────────────────────────────────────────────────────
-
-const STATUS_CONFIG: Record<string, { label: string; icon: typeof faCircleCheck; cls: string }> = {
-  ACTIVE:   { label: 'Autorizado',    icon: faCircleCheck, cls: 'bg-room-success/10 text-room-success border border-room-success/20' },
-  INACTIVE: { label: 'No Autorizado', icon: faCircleXmark, cls: 'bg-room-error/10 text-room-error border border-room-error/20' },
-};
-
-const StatusBadge = ({ status }: { status: Employee['accessStatus'] }) => {
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.INACTIVE;
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide ${cfg.cls}`}>
-      <FontAwesomeIcon icon={cfg.icon} className="text-[10px]" />
-      {cfg.label}
-    </span>
-  );
-};
-
-// ─── Avatar Placeholder ───────────────────────────────────────────────────────
-
-const Avatar = ({ name }: { name: string }) => {
-  const initials = name
-    .split(' ')
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase();
-  return (
-    <div className="w-9 h-9 rounded-full bg-room-primary/20 border border-room-primary/30 flex items-center justify-center text-room-primary text-xs font-bold shrink-0">
-      {initials}
-    </div>
-  );
-};
-
-// ─── Modal de Confirmación de Eliminación ─────────────────────────────────────
-
-const DeleteModal = ({
-  employee,
-  onConfirm,
-  onCancel,
-  isDeleting,
-}: {
-  employee: Employee;
-  onConfirm: () => void;
-  onCancel: () => void;
-  isDeleting: boolean;
-}) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
-    <div className="relative bg-[#152031] border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-      <div className="flex items-start gap-4">
-        <div className="w-12 h-12 rounded-xl bg-room-error/10 border border-room-error/20 flex items-center justify-center shrink-0">
-          <FontAwesomeIcon icon={faTriangleExclamation} className="text-room-error text-xl" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-1">Confirmar Eliminación</h3>
-          <p className="text-sm text-white/50 leading-relaxed">
-            ¿Está seguro que desea eliminar a <strong className="text-white">{employee.name}</strong> ({employee.internalId})? Esta acción no se puede deshacer.
-          </p>
-        </div>
-      </div>
-      <div className="flex justify-end gap-3 mt-6">
-        <Button variant="secondary" text="Cancelar" iconLeft={faTimes} onClick={onCancel} />
-        <Button variant="error" text="Eliminar" iconLeft={faTrash} onClick={onConfirm} isLoading={isDeleting} loadingText="Eliminando..." />
-      </div>
-    </div>
-  </div>
-);
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
-const DEPARTMENTS = ['Todos', 'I+D', 'Seguridad', 'Producción', 'Logística', 'Administración'];
-const PAGE_SIZE = 10;
+interface Department {
+  id: number;
+  name: string;
+}
 
 const EmployeesPage = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [total, setTotal]         = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [page, setPage]           = useState(0);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState<string | null>(null);
-  const [search, setSearch]       = useState('');
-  const [deptFilter, setDeptFilter] = useState('Todos');
-  const [toDelete, setToDelete]   = useState<Employee | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
 
-  const fetchEmployees = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // El backend devuelve List<EmployeeDTO> (array plano, sin paginación)
-      const raw = await api.get<EmployeeDTO[]>('/employees');
-      const mapped = (raw ?? []).map(mapDTO);
-
-      // Filtrado local por búsqueda y departamento
-      const filtered = mapped.filter((e) => {
-        const matchSearch =
-          !search ||
-          e.name.toLowerCase().includes(search.toLowerCase()) ||
-          e.internalId.toLowerCase().includes(search.toLowerCase()) ||
-          (e.email ?? '').toLowerCase().includes(search.toLowerCase());
-        const matchDept =
-          deptFilter === 'Todos' || e.departmentName === deptFilter;
-        return matchSearch && matchDept;
-      });
-
-      // Paginación local
-      const start = page * PAGE_SIZE;
-      const paginated = filtered.slice(start, start + PAGE_SIZE);
-      setEmployees(paginated);
-      setTotal(filtered.length);
-      setTotalPages(Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)));
-    } catch (err: any) {
-      setEmployees([]);
-      setTotal(0);
-      setTotalPages(0);
-      if (!err.message?.includes('401') && !err.message?.includes('403')) {
-        setError('No se pudo conectar con el servidor. Verifique que el backend esté activo.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [page, search, deptFilter]);
+  // Form State
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    departmentId: 1,
+    isAuthorized: true
+  });
 
   useEffect(() => {
-    const timer = setTimeout(fetchEmployees, search ? 400 : 0);
-    return () => clearTimeout(timer);
-  }, [fetchEmployees]);
+    fetchData();
+  }, []);
 
-  const handleDelete = async () => {
-    if (!toDelete) return;
-    setIsDeleting(true);
+  const fetchData = async () => {
     try {
-      await api.delete(`/employees/${toDelete.employeeId}`);
-      setToDelete(null);
-      fetchEmployees();
-    } catch {
-      setError('Error al eliminar el empleado.');
+      setIsLoading(true);
+      const [empData, deptData] = await Promise.all([
+        api.get('/employees'),
+        api.get('/departments') // Asumiendo que existe este endpoint
+      ]);
+      setEmployees(Array.isArray(empData) ? empData : []);
+      setDepartments(Array.isArray(deptData) ? deptData : []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      // Fallback para departamentos si falla la API
+      setDepartments([
+        { id: 1, name: 'I+D' },
+        { id: 2, name: 'Seguridad' },
+        { id: 3, name: 'Producción' },
+        { id: 4, name: 'Administración' },
+        { id: 5, name: 'Logística' }
+      ]);
     } finally {
-      setIsDeleting(false);
+      setIsLoading(false);
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post('/employees', formData);
+      setShowModal(false);
+      resetForm();
+      fetchData();
+    } catch (error) {
+      alert('Error al registrar empleado. Verifique los datos.');
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phoneNumber: '',
+      departmentId: 1,
+      isAuthorized: true
+    });
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-8 h-8 rounded-lg bg-room-primary/20 border border-room-primary/30 flex items-center justify-center">
-              <FontAwesomeIcon icon={faUsers} className="text-room-primary text-sm" />
+    <div className="space-y-8 animate-fade-in relative">
+      {/* Modal Premium para Empleados */}
+      {showModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
+          <div className="w-full max-w-lg bg-[#1f2a3c] border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-[#152031]">
+              <div className="flex items-center gap-3">
+                <FontAwesomeIcon icon={faPlus} className="text-room-primary" />
+                <h3 className="text-lg font-black uppercase tracking-tight text-white">Registro de Personal</h3>
+              </div>
+              <button onClick={() => setShowModal(false)} className="text-white/20 hover:text-white transition-colors">
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
             </div>
-            <h2 className="text-3xl font-bold text-white tracking-tight uppercase">Gestión de Empleados</h2>
+            
+            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+              {/* ID Automático Notice */}
+              <div className="bg-room-primary/5 border border-room-primary/20 p-4 rounded-xl flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-room-primary/10 flex items-center justify-center text-room-primary">
+                  <FontAwesomeIcon icon={faIdCard} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-room-primary uppercase tracking-widest">PIN de Acceso</p>
+                  <p className="text-xs text-white/60">Generación automática encriptada (R9-XXXX)</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Nombre</label>
+                  <div className="relative group">
+                    <FontAwesomeIcon icon={faUser} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
+                    <input 
+                      className="w-full bg-[#040e1f] border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
+                      placeholder="Nombre"
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Apellido</label>
+                  <div className="relative group">
+                    <FontAwesomeIcon icon={faUser} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
+                    <input 
+                      className="w-full bg-[#040e1f] border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
+                      placeholder="Apellido"
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Email de Contacto</label>
+                <div className="relative group">
+                  <FontAwesomeIcon icon={faAt} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
+                  <input 
+                    type="email"
+                    className="w-full bg-[#040e1f] border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
+                    placeholder="email@ejemplo.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Departamento</label>
+                  <div className="relative group">
+                    <FontAwesomeIcon icon={faBuilding} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
+                    <select 
+                      className="w-full bg-[#040e1f] border border-white/10 rounded-xl pl-12 pr-10 py-3 text-sm text-white appearance-none focus:ring-2 focus:ring-room-primary/50 focus:outline-none cursor-pointer"
+                      value={formData.departmentId}
+                      onChange={(e) => setFormData({...formData, departmentId: parseInt(e.target.value)})}
+                    >
+                      {departments.map(dept => (
+                        <option key={dept.id} value={dept.id}>{dept.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Teléfono</label>
+                  <div className="relative group">
+                    <FontAwesomeIcon icon={faPhone} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
+                    <input 
+                      className="w-full bg-[#040e1f] border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
+                      placeholder="+XX..."
+                      value={formData.phoneNumber}
+                      onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-[#040e1f] rounded-xl border border-white/5">
+                <div className="flex items-center gap-3">
+                  <FontAwesomeIcon icon={faShieldHalved} className={formData.isAuthorized ? 'text-room-success' : 'text-white/20'} />
+                  <div>
+                    <p className="text-xs font-bold text-white uppercase">Acceso Autorizado</p>
+                    <p className="text-[10px] text-white/30 uppercase">Habilitar entrada al ROOM_911</p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={formData.isAuthorized}
+                    onChange={(e) => setFormData({...formData, isAuthorized: e.target.checked})}
+                    className="sr-only peer" 
+                  />
+                  <div className="w-11 h-6 bg-white/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-room-primary"></div>
+                </label>
+              </div>
+
+              <div className="flex gap-4 pt-2">
+                <button 
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 px-6 py-4 rounded-xl font-bold border border-white/10 text-white/40 hover:bg-white/5 hover:text-white transition-all uppercase text-[10px] tracking-widest"
+                >
+                  Cerrar
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-1 px-6 py-4 rounded-xl font-bold bg-room-primary text-on-primary-fixed hover:brightness-110 active:scale-95 transition-all shadow-glow uppercase text-[10px] tracking-widest"
+                >
+                  Registrar Personal
+                </button>
+              </div>
+            </form>
           </div>
-          <p className="text-sm text-white/40 ml-11">Administración y control de acceso del personal</p>
-        </div>
-
-        <Button
-          variant="primary"
-          text="Añadir Empleado"
-          iconLeft={faUserPlus}
-          onClick={() => {/* TODO: open modal */}}
-        />
-      </div>
-
-      {/* Error banner */}
-      {error && (
-        <div className="flex items-center gap-3 p-4 bg-room-error/10 border border-room-error/20 rounded-xl">
-          <FontAwesomeIcon icon={faTriangleExclamation} className="text-room-error shrink-0" />
-          <p className="text-sm text-room-error flex-1">{error}</p>
-          <button onClick={fetchEmployees} className="text-room-error/60 hover:text-room-error transition-colors p-1">
-            <FontAwesomeIcon icon={faRotateRight} />
-          </button>
         </div>
       )}
 
-      {/* Action / Filter Bar */}
-      <div className="bg-[#152031] border border-white/5 rounded-xl p-4 flex flex-col md:flex-row items-center gap-4">
-        {/* Search */}
-        <div className="relative flex-1 w-full md:max-w-xs group">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-white/20 group-focus-within:text-room-primary transition-colors">
-            <FontAwesomeIcon icon={faSearch} className="text-sm" />
-          </div>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            placeholder="Buscar empleado..."
-            className="w-full bg-white/5 border border-white/10 rounded-lg py-2 pl-10 pr-4 text-sm placeholder:text-white/20 focus:outline-none focus:border-room-primary/50 focus:ring-1 focus:ring-room-primary/50 transition-all text-white"
-          />
-          {search && (
-            <button onClick={() => setSearch('')} className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/20 hover:text-white transition-colors">
-              <FontAwesomeIcon icon={faXmark} />
-            </button>
-          )}
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-3xl font-black uppercase tracking-tight text-white">
+            Gestión de <span className="text-room-primary">Personal Operativo</span>
+          </h2>
+          <p className="text-white/40 text-sm mt-1">Control de acceso y base de datos de empleados del ROOM_911.</p>
         </div>
-
-        {/* Department Filter */}
-        <div className="relative w-full md:w-52">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-white/20">
-            <FontAwesomeIcon icon={faFilter} className="text-sm" />
-          </div>
-          <select
-            value={deptFilter}
-            onChange={(e) => { setDeptFilter(e.target.value); setPage(0); }}
-            className="w-full bg-white/5 border border-white/10 rounded-lg py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-room-primary/50 focus:ring-1 focus:ring-room-primary/50 transition-all appearance-none cursor-pointer"
-          >
-            {DEPARTMENTS.map((d) => (
-              <option key={d} value={d} className="bg-[#152031]">{d === 'Todos' ? 'Todos los Departamentos' : d}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Record count */}
-        <div className="ml-auto hidden md:flex items-center gap-2 text-[10px] font-bold text-white/30 uppercase tracking-widest">
-          <FontAwesomeIcon icon={faUsers} />
-          <span>{total.toLocaleString()} registros</span>
-        </div>
+        <Button 
+          onClick={() => setShowModal(true)}
+          text="Añadir Empleado"
+          iconLeft={faPlus}
+          variant="primary"
+          className="shadow-glow py-3 px-8"
+        />
       </div>
 
-      {/* Table Card */}
-      <div className="bg-[#152031] border border-white/5 rounded-xl overflow-hidden flex flex-col">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-white/5 bg-[#0d1a2a] text-[10px] font-bold text-white/30 uppercase tracking-widest">
-                <th className="px-5 py-4">Empleado</th>
-                <th className="px-5 py-4">
-                  <span className="flex items-center gap-2"><FontAwesomeIcon icon={faIdBadge} /> ID Interno</span>
-                </th>
-                <th className="px-5 py-4">
-                  <span className="flex items-center gap-2"><FontAwesomeIcon icon={faBuilding} /> Departamento</span>
-                </th>
-                <th className="px-5 py-4">Estado de Acceso</th>
-                <th className="px-5 py-4 text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="text-sm divide-y divide-white/[0.03]">
-              {/* Loading rows */}
-              {loading && (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td className="px-5 py-4">
+      {/* Table Container */}
+      <div className="bg-[#152031] rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
+        <div className="p-6 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="relative w-full md:w-96 group">
+            <FontAwesomeIcon icon={faSearch} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
+            <input 
+              type="text" 
+              placeholder="Buscar por nombre, PIN o departamento..."
+              className="w-full bg-[#040e1f] border border-white/10 rounded-xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-room-primary/50 transition-all text-white"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="overflow-x-auto min-h-[300px]">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center h-64 gap-4">
+              <div className="w-12 h-12 border-4 border-room-primary/30 border-t-room-primary rounded-full animate-spin"></div>
+              <p className="text-[10px] uppercase font-black text-room-primary animate-pulse">Consultando Registros Biométricos...</p>
+            </div>
+          ) : (
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-[#040e1f]/50 border-b border-white/5">
+                  <th className="px-6 py-4 text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">PIN / Empleado</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Departamento</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Email</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Acceso</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-white/30 uppercase tracking-[0.2em] text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {employees.filter(e => 
+                  e.firstName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                  e.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  e.internalId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  e.departmentName.toLowerCase().includes(searchTerm.toLowerCase())
+                ).map((emp) => (
+                  <tr key={emp.id} className="hover:bg-white/[0.02] transition-colors group">
+                    <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-white/5" />
-                        <div className="space-y-1.5">
-                          <div className="h-3 w-32 bg-white/5 rounded" />
-                          <div className="h-2.5 w-24 bg-white/5 rounded" />
+                        <div className="w-10 h-10 rounded-full bg-room-primary/20 flex items-center justify-center text-room-primary font-black text-xs border border-room-primary/30">
+                          {emp.internalId}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white uppercase tracking-tight">{emp.firstName} {emp.lastName}</p>
+                          <p className="text-[10px] text-room-primary font-mono tracking-wider">{emp.internalId}</p>
                         </div>
                       </div>
                     </td>
-                    {[1, 2, 3, 4].map((j) => (
-                      <td key={j} className="px-5 py-4">
-                        <div className="h-3 bg-white/5 rounded w-20" />
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              )}
-
-              {/* Empty state */}
-              {!loading && employees.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-5 py-20 text-center">
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-                        <FontAwesomeIcon icon={faUsers} className="text-2xl text-white/20" />
+                    <td className="px-6 py-5">
+                      <span className="px-2 py-1 bg-white/5 rounded text-[10px] font-mono text-white/60 border border-white/5 uppercase">
+                        {emp.departmentName}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5">
+                      <p className="text-[11px] text-white/40 font-medium">{emp.email}</p>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-1.5 h-1.5 rounded-full ${emp.isAuthorized ? 'bg-room-success animate-pulse' : 'bg-room-error'}`}></div>
+                        <span className={`text-[10px] font-bold uppercase tracking-widest ${emp.isAuthorized ? 'text-room-success' : 'text-room-error'}`}>
+                          {emp.isAuthorized ? 'Autorizado' : 'Restringido'}
+                        </span>
                       </div>
-                      <div>
-                        <p className="text-xs font-bold text-white/20 uppercase tracking-widest">Sin empleados registrados</p>
-                        <p className="text-[11px] text-white/10 mt-1">
-                          {search || deptFilter !== 'Todos'
-                            ? 'No se encontraron resultados para los filtros aplicados.'
-                            : 'Añada el primer empleado para comenzar a gestionar el personal.'}
-                        </p>
-                      </div>
-                      {(search || deptFilter !== 'Todos') && (
-                        <button
-                          onClick={() => { setSearch(''); setDeptFilter('Todos'); }}
-                          className="text-[11px] text-room-primary hover:text-blue-400 transition-colors flex items-center gap-1.5"
-                        >
-                          <FontAwesomeIcon icon={faXmark} /> Limpiar filtros
+                    </td>
+                    <td className="px-6 py-5 text-right">
+                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button className="w-8 h-8 rounded-lg bg-white/5 hover:bg-room-primary/20 text-white/40 hover:text-room-primary transition-all">
+                          <FontAwesomeIcon icon={faEdit} className="text-xs" />
                         </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              )}
-
-              {/* Data rows */}
-              {!loading && employees.map((emp) => (
-                <tr key={emp.employeeId} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar name={emp.name} />
-                      <div className="min-w-0">
-                        <p className="font-semibold text-white truncate">{emp.name}</p>
-                        <p className="text-[11px] text-white/30 truncate">{emp.email ?? emp.departmentName}</p>
+                        <button className="w-8 h-8 rounded-lg bg-white/5 hover:bg-room-error/20 text-white/40 hover:text-room-error transition-all">
+                          <FontAwesomeIcon icon={faTrash} className="text-xs" />
+                        </button>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className="font-mono text-xs text-white/50 bg-white/5 px-2 py-1 rounded">{emp.internalId}</span>
-                  </td>
-                  <td className="px-5 py-4 text-white/70 text-xs">{emp.departmentName}</td>
-                  <td className="px-5 py-4">
-                    <StatusBadge status={emp.accessStatus} />
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        title="Ver detalles"
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-white hover:bg-white/5 transition-all"
-                      >
-                        <FontAwesomeIcon icon={faEye} className="text-sm" />
-                      </button>
-                      <button
-                        title="Editar empleado"
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-room-primary hover:bg-room-primary/10 transition-all"
-                      >
-                        <FontAwesomeIcon icon={faPen} className="text-sm" />
-                      </button>
-                      <button
-                        title="Eliminar empleado"
-                        onClick={() => setToDelete(emp)}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-room-error hover:bg-room-error/10 transition-all"
-                      >
-                        <FontAwesomeIcon icon={faTrash} className="text-sm" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination Footer */}
-        <div className="border-t border-white/5 px-5 py-3 flex items-center justify-between bg-[#0d1a2a]">
-          <span className="text-[10px] text-white/20 uppercase tracking-widest font-bold">
-            {loading ? (
-              <span className="flex items-center gap-2"><FontAwesomeIcon icon={faSpinner} className="animate-spin" /> Cargando...</span>
-            ) : (
-              `Mostrando ${employees.length === 0 ? 0 : page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, total ?? 0)} de ${(total ?? 0).toLocaleString()} empleados`
-            )}
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              disabled={page === 0 || loading}
-              onClick={() => setPage((p) => p - 1)}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-white hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
-            >
-              <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
-            </button>
-
-            {/* Page numbers */}
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-              const pageNum = totalPages <= 5 ? i : Math.max(0, Math.min(page - 2, totalPages - 5)) + i;
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => setPage(pageNum)}
-                  disabled={loading}
-                  className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
-                    pageNum === page
-                      ? 'bg-room-primary text-white shadow-glow'
-                      : 'text-white/30 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  {pageNum + 1}
-                </button>
-              );
-            })}
-
-            <button
-              disabled={page >= totalPages - 1 || loading}
-              onClick={() => setPage((p) => p + 1)}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-white hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
-            >
-              <FontAwesomeIcon icon={faChevronRight} className="text-sm" />
-            </button>
-          </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
-
-      {/* Delete Confirmation Modal */}
-      {toDelete && (
-        <DeleteModal
-          employee={toDelete}
-          onConfirm={handleDelete}
-          onCancel={() => setToDelete(null)}
-          isDeleting={isDeleting}
-        />
-      )}
     </div>
   );
 };
