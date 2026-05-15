@@ -2,7 +2,6 @@ package com.room911.controller.auth;
 
 import com.room911.dto.AdminLoginRequest;
 import com.room911.dto.AuthResponse;
-import com.room911.service.AdminUserService;
 import com.room911.security.CustomUserDetailsService;
 import com.room911.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;

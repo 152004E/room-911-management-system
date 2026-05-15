@@ -34,10 +34,8 @@ public class AdminUserServiceImpl implements AdminUserService {
     public AdminUserDTO save(AdminUserDTO adminUserDTO) {
         // Nota: El hash del password debería manejarse aquí o en el controller con un encoder
         AdminUser adminUser = toEntity(adminUserDTO);
+        @SuppressWarnings("null")
         AdminUser saved = adminUserRepository.save(adminUser);
-        if (saved == null) {
-            throw new RuntimeException("Could not save admin user");
-        }
         return toDTO(saved);
     }
 

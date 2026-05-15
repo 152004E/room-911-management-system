@@ -26,8 +26,10 @@ public class DataSeeder implements CommandLineRunner {
                     .role("SUPERADMIN")
                     .isActive(true)
                     .build();
-            adminUserRepository.save(admin);
-            System.out.println("Default admin user created: admin / admin123");
+            AdminUser saved = adminUserRepository.save(admin);
+            if (saved != null) {
+                System.out.println("Default admin user created: admin / admin123");
+            }
         }
     }
 }

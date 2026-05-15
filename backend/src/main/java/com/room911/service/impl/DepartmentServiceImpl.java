@@ -33,10 +33,8 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     public DepartmentDTO save(DepartmentDTO departmentDTO) {
         Department department = toEntity(departmentDTO);
+        @SuppressWarnings("null")
         Department saved = departmentRepository.save(department);
-        if (saved == null) {
-            throw new RuntimeException("Could not save department");
-        }
         return toDTO(saved);
     }
 
