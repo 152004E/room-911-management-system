@@ -18,18 +18,14 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (adminUserRepository.findByUsername("admin").isEmpty()) {
-            AdminUser admin = AdminUser.builder()
-                    .username("admin")
-                    // Password is "admin123"
-                    .passwordHash(passwordEncoder.encode("admin123"))
-                    .role("SUPERADMIN")
-                    .isActive(true)
-                    .build();
-            AdminUser saved = adminUserRepository.save(admin);
-            if (saved != null) {
-                System.out.println("Default admin user created: admin / admin123");
-            }
-        }
+        AdminUser admin = adminUserRepository.findByUsername("admin").orElse(new AdminUser());
+        
+        admin.setUsername("admin");
+        admin.setPasswordHash(passwordEncoder.encode("admin123"));
+        admin.setRole("ADMIN_ROOM_911");
+        admin.setIsActive(true);
+        
+        adminUserRepository.save(admin);
+        System.out.println(">>> SECURITY SYSTEM: Admin user 'admin' has been synchronized with password 'admin123'");
     }
 }

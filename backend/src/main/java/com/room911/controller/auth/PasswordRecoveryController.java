@@ -11,7 +11,7 @@ public class PasswordRecoveryController {
 
     @PostMapping("/request")
     public ResponseEntity<?> requestRecovery(@RequestBody PasswordRecoveryRequest request) {
-        // TODO: Implement password recovery logic here (e.g., send email)
+        
         // For now, return a placeholder response
         return ResponseEntity.ok().body("Password recovery requested for: " + request.getIdentifier());
     }

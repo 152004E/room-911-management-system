@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faShieldHalved, 
@@ -15,6 +15,12 @@ import {
 
 const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/auth/login');
+  };
 
   const menuItems = [
     { name: 'Panel', icon: faChartPie, path: '/admin/dashboard' },
@@ -23,7 +29,7 @@ const Sidebar = () => {
     { name: 'Registros de Acceso', icon: faHistory, path: '/admin/access-logs' },
     { name: 'Cargar CSV', icon: faFileUpload, path: '/admin/upload' },
     { name: 'Informes', icon: faChartLine, path: '/admin/reports' },
-    { name: 'Administradores', icon: faUserShield, path: '/admin/users' },
+    { name: 'Administradores', icon: faUserShield, path: '/admin/admins' },
     { name: 'Ajustes', icon: faGear, path: '/admin/settings' },
   ];
 
@@ -66,8 +72,8 @@ const Sidebar = () => {
 
       {/* Admin Profile Footer */}
       <div className="p-4 border-t border-white/5 flex items-center justify-between">
-        <div className="flex items-center">
-          <div className="w-9 h-9 rounded-full overflow-hidden border border-white/10 mr-3">
+        <div className="flex items-center min-w-0">
+          <div className="w-9 h-9 rounded-full overflow-hidden border border-white/10 mr-3 shrink-0">
             <img 
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYz5T3XlXOPL1c5NygZ0lpXT5QLQp-rrPCGdGdFK1x3WtK8CM0ndcipiGWVkAGm-x0dggw4U-Vzdn1vzR5keYEkQnVuRhGqdOXDtqzceex_TUduOrL0SF9r9CXhaXXAhlnOAk1m7uT4nPH2ByrLkvvNr9RRdpZidrZJUgC7hICznZ_GOi-LcY7iy6x7JQIeYzSpl9bvZOw_zcID9oPuKQbihr1ypeGpoqlfH-amowlHh_MmvPCD2zlPPDHcbJsMht8O4c1yKdOPsY" 
               alt="Admin Avatar"
@@ -80,7 +86,8 @@ const Sidebar = () => {
           </div>
         </div>
         <button 
-          className="text-white/30 hover:text-room-error transition-colors p-2"
+          onClick={handleLogout}
+          className="text-white/30 hover:text-room-error transition-colors p-2 ml-2"
           title="Cerrar Sesión"
         >
           <FontAwesomeIcon icon={faSignOutAlt} />
