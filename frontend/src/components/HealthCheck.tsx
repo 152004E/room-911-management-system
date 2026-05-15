@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Button } from './globalcomponent/Button'
+import { faCheck } from '@fortawesome/free-solid-svg-icons'
 
 interface HealthResponse {
   status: string;
@@ -31,13 +33,15 @@ function HealthCheck() {
 
   return (
     <div className="space-y-4">
-      <button
+      <Button
         onClick={checkHealth}
-        disabled={loading}
-        className="px-6 py-3 bg-room-primary text-white rounded-room font-semibold transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed btn-glow"
-      >
-        {loading ? '🔄 Sincronizando...' : '✓ Iniciar Validación'}
-      </button>
+        isLoading={loading}
+        text="Iniciar Validación"
+        iconLeft={faCheck}
+        loadingText="Sincronizando..."
+        variant="primary"
+        className="w-full md:w-auto"
+      />
 
       {error && (
         <div className="p-4 rounded-room border-l-4 bg-room-error/10 border-room-error text-room-error">

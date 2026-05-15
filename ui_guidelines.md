@@ -26,11 +26,24 @@ Este documento define la identidad visual y las reglas de diseño para el sistem
 ## 4. Componentes y Estética
 - **Esquinas**: Border Radius de **8px**.
 - **Tarjetas (Cards)**: Sutil efecto de **Glassmorphism** (backdrop-filter: blur).
-- **Botones**: Efecto **Glow neón ligero** en acciones críticas.
+- **Botones**: 
+  - **Uso Obligatorio**: Se debe usar siempre el componente global `Button` ubicado en `src/components/globalcomponent/Button.tsx`.
+  - **Iconografía Obligatoria**: Todo botón debe incluir al menos un icono (izquierdo o derecho) para reforzar el lenguaje visual.
+  - **Estética**: Efecto **Glow neón ligero** en acciones primarias y transiciones suaves de escala (hover:scale-[1.02]).
 - **Sombras**: Soft shadows discretas para profundidad.
-- **Iconografía**: Outline moderno y minimalista.
+- **Iconografía**: Outline moderno y minimalista (FontAwesome).
 
-## 5. Experiencia y Lenguaje
+## 5. Componentes Globales
+### Button
+Componente unificado para todas las acciones del sistema.
+- **Ubicación**: `src/components/globalcomponent/Button.tsx`
+- **Variantes**: `primary`, `success`, `error`, `secondary`.
+- **Propiedades**: 
+  - `iconLeft`/`iconRight`: Requerido por lineamiento (FontAwesome IconDefinition).
+  - `isLoading`: Soporta estados de carga con diferentes animaciones.
+  - `to`: Soporta navegación interna vía `react-router-dom`.
+
+## 6. Experiencia y Lenguaje
 - **Idioma**: Español técnico.
 - **Terminología**:
   - Protocolo de Seguridad

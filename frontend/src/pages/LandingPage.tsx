@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import HealthCheck from '../components/HealthCheck'
 import Header from '../components/Header'
+import { Button } from '../components/globalcomponent/Button'
+import { faShieldHalved } from '@fortawesome/free-solid-svg-icons'
 
 function LandingPage() {
   const [count, setCount] = useState(0)
@@ -60,12 +62,13 @@ function LandingPage() {
             <p className="text-white/70 max-w-lg">
               Inicie la validación del protocolo de seguridad para registrar nuevos accesos en el historial del sistema.
             </p>
-            <button
+            <Button
               onClick={() => setCount((count) => count + 1)}
-              className="px-10 py-4 bg-room-primary text-white rounded-room font-bold text-lg btn-glow"
-            >
-              Validar Acceso {count}
-            </button>
+              text={`Validar Acceso ${count}`}
+              iconLeft={faShieldHalved}
+              variant="primary"
+              className="px-10 py-4 text-lg"
+            />
             <p className="text-white/40 text-sm italic">
               ID de Sesión: 0x911-AC-{count}
             </p>
