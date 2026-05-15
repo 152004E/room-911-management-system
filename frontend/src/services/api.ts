@@ -25,7 +25,12 @@ export const apiCall = async <T = any>(endpoint: string, options: RequestInit = 
 
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
-        // Redirigir al login si el token es inválido o expiró
+        // Si es el login o acceso, intentamos sacar el mensaje del body
+        if (url.includes('/auth/')) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `Error: ${response.status}`);
+        }
+
         localStorage.removeItem('token');
         if (window.location.pathname !== '/auth/login') {
             window.location.href = '/auth/login';

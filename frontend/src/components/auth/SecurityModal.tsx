@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faShieldHalved, 
@@ -23,6 +24,7 @@ interface SecurityModalProps {
 type AccessState = 'IDLE' | 'VALIDATING' | 'GRANTED' | 'DENIED';
 
 export const SecurityModal = ({ onClose }: SecurityModalProps) => {
+  const navigate = useNavigate();
   const [code, setCode] = useState('');
   const [status, setStatus] = useState<AccessState>('IDLE');
   const [message, setMessage] = useState('Ingrese su código de identificación');
@@ -89,10 +91,10 @@ export const SecurityModal = ({ onClose }: SecurityModalProps) => {
           dept: response.employee.departmentName
         });
         
-        // Auto-cerrar después de 3 segundos
+        // Redirigir al interior del Room después de mostrar el éxito brevemente
         setTimeout(() => {
-          onClose();
-        }, 3000);
+          navigate('/room-911', { state: { employee: response.employee } });
+        }, 1500);
       } else {
         throw new Error(response.message || 'No autorizado');
       }

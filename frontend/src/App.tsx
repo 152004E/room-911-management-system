@@ -5,6 +5,8 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
 import DashboardLayout from './layouts/DashboardLayout'
 import DashboardPage from './pages/admin/DashboardPage'
 import EmployeesPage from './pages/admin/EmployeesPage'
+import Room911Page from './pages/Room911Page'
+import { ProtectedRoute } from './components/auth/ProtectedRoute'
 
 function App() {
   return (
@@ -20,12 +22,15 @@ function App() {
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
         </Route>
 
-        {/* Rutas Administrativas (Dashboard) */}
-        <Route path="/admin" element={<DashboardLayout />}>
+        {/* Rutas Administrativas (Dashboard) Protegidas */}
+        <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><DashboardLayout /></ProtectedRoute>}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="employees" element={<EmployeesPage />} />
         </Route>
+
+        {/* Ruta de Acceso al Room Protegida */}
+        <Route path="/room-911" element={<ProtectedRoute><Room911Page /></ProtectedRoute>} />
 
         {/* Redirección para cualquier otra ruta no encontrada */}
         <Route path="*" element={<Navigate to="/auth/login" replace />} />

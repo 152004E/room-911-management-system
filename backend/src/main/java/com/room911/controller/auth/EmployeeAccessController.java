@@ -67,9 +67,13 @@ public class EmployeeAccessController {
                 )
             ));
         } else {
+            String msg = employeeOpt.isPresent() 
+                ? "El usuario existe pero no tiene permisos" 
+                : "Usuario no encontrado";
+            
             return ResponseEntity.status(403).body(Map.of(
                 "authorized", false,
-                "message", employeeOpt.isPresent() ? "Acceso Denegado: Sin autorización" : "Código no registrado"
+                "message", msg
             ));
         }
     }
