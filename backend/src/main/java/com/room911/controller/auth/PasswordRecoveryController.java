@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/auth/recovery")
+@RequestMapping("/auth/recovery")
 @CrossOrigin(origins = "*")
 public class PasswordRecoveryController {
 

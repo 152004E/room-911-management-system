@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/auth/employee")
+@RequestMapping("/auth/employee")
 @CrossOrigin(origins = "*")
 public class EmployeeAccessController {
 
