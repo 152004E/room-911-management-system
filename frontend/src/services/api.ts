@@ -34,6 +34,12 @@ export const apiCall = async <T = any>(endpoint: string, options: RequestInit = 
       throw new Error(`API Error: ${response.status} ${response.statusText}`)
     }
 
+    // Solo intentar parsear JSON si hay contenido en la respuesta
+    const contentType = response.headers.get('content-type');
+    if (response.status === 204 || !contentType || !contentType.includes('application/json')) {
+      return {} as T;
+    }
+
     return await response.json()
   } catch (error) {
     console.error(`Error en ${endpoint}:`, error)

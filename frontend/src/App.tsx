@@ -4,6 +4,7 @@ import LoginPage from './pages/auth/LoginPage'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
 import DashboardLayout from './layouts/DashboardLayout'
 import DashboardPage from './pages/admin/DashboardPage'
+import EmployeesPage from './pages/admin/EmployeesPage'
 
 function App() {
   return (
@@ -23,7 +24,7 @@ function App() {
         <Route path="/admin" element={<DashboardLayout />}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
-          {/* Las rutas para empleados, departamentos, etc., se añadirán aquí */}
+          <Route path="employees" element={<EmployeesPage />} />
         </Route>
 
         {/* Redirección para cualquier otra ruta no encontrada */}
