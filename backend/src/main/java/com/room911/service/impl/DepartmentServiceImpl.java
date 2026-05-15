@@ -34,6 +34,9 @@ public class DepartmentServiceImpl implements DepartmentService {
     public DepartmentDTO save(DepartmentDTO departmentDTO) {
         Department department = toEntity(departmentDTO);
         Department saved = departmentRepository.save(department);
+        if (saved == null) {
+            throw new RuntimeException("Could not save department");
+        }
         return toDTO(saved);
     }
 

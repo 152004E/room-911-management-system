@@ -15,7 +15,7 @@ const AuthLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#081425] text-white flex flex-col lg:flex-row relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-[#081425] text-white flex flex-col lg:flex-row relative overflow-hidden font-sans scanline">
       {/* Sidebar - Visible on Desktop */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-[#040e1f] border-r border-white/5 relative z-10">
         <div className='flex flex-col max-w-md mx-auto my-auto'>

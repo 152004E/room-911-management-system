@@ -1,14 +1,16 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import LandingPage from './pages/LandingPage'
 import AuthLayout from './layouts/AuthLayout'
 import LoginPage from './pages/auth/LoginPage'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
+import DashboardLayout from './layouts/DashboardLayout'
+import DashboardPage from './pages/admin/DashboardPage'
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        {/* Redirigir la raíz al Login */}
+        <Route path="/" element={<Navigate to="/auth/login" replace />} />
         
         {/* Rutas de Autenticación */}
         <Route path="/auth" element={<AuthLayout />}>
@@ -17,8 +19,15 @@ function App() {
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
         </Route>
 
-        {/* Redirección para rutas no encontradas */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Rutas Administrativas (Dashboard) */}
+        <Route path="/admin" element={<DashboardLayout />}>
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          {/* Las rutas para empleados, departamentos, etc., se añadirán aquí */}
+        </Route>
+
+        {/* Redirección para cualquier otra ruta no encontrada */}
+        <Route path="*" element={<Navigate to="/auth/login" replace />} />
       </Routes>
     </Router>
   )

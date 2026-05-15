@@ -37,6 +37,9 @@ public class AccessLogServiceImpl implements AccessLogService {
             accessLog.setEmployee(employee);
         }
         AccessLog saved = accessLogRepository.save(accessLog);
+        if (saved == null) {
+            throw new RuntimeException("Could not save access log");
+        }
         return toDTO(saved);
     }
 
