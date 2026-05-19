@@ -18,6 +18,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     public List<DepartmentDTO> findAll() {
         return departmentRepository.findAll().stream()
+                .filter(d -> d.getIsActive() == null || d.getIsActive())
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
@@ -26,6 +27,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     public DepartmentDTO findById(Long id) {
         if (id == null) return null;
         return departmentRepository.findById(id)
+                .filter(d -> d.getIsActive() == null || d.getIsActive())
                 .map(this::toDTO)
                 .orElse(null);
     }
@@ -33,6 +35,9 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     public DepartmentDTO save(DepartmentDTO departmentDTO) {
         Department department = toEntity(departmentDTO);
+        if (department.getIsActive() == null) {
+            department.setIsActive(true);
+        }
         @SuppressWarnings("null")
         Department saved = departmentRepository.save(department);
         return toDTO(saved);
@@ -53,6 +58,34 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     public void deleteById(Long id) {
+        if (id != null) {
+            departmentRepository.findById(id).ifPresent(department -> {
+                department.setIsActive(false);
+                departmentRepository.save(department);
+            });
+        }
+    }
+
+    @Override
+    public List<DepartmentDTO> findDeleted() {
+        return departmentRepository.findAll().stream()
+                .filter(d -> d.getIsActive() != null && !d.getIsActive())
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void restoreById(Long id) {
+        if (id != null) {
+            departmentRepository.findById(id).ifPresent(department -> {
+                department.setIsActive(true);
+                departmentRepository.save(department);
+            });
+        }
+    }
+
+    @Override
+    public void deletePermanently(Long id) {
         if (id != null) {
             departmentRepository.deleteById(id);
         }

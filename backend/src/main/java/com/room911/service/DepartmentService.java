@@ -9,4 +9,7 @@ public interface DepartmentService {
     DepartmentDTO save(DepartmentDTO departmentDTO);
     DepartmentDTO update(Long id, DepartmentDTO departmentDTO);
     void deleteById(Long id);
+    List<DepartmentDTO> findDeleted();
+    void restoreById(Long id);
+    void deletePermanently(Long id);
 }

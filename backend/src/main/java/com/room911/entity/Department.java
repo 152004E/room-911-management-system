@@ -27,6 +27,9 @@ public class Department {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -36,5 +39,6 @@ public class Department {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        if (isActive == null) isActive = true;
     }
 }
