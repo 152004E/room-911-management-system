@@ -52,10 +52,11 @@ const ReportsPage = () => {
     if (isAutoRefresh) setIsRefreshing(true);
 
     try {
-      const [deptRes, empRes, adminRes] = await Promise.all([
+      const [deptRes, empRes, adminRes, logsRes] = await Promise.all([
         api.get('/departments').catch(() => []),
         api.get('/employees').catch(() => []),
-        api.get('/admins').catch(() => [])
+        api.get('/admins').catch(() => []),
+        api.get('/access-logs').catch(() => [])
       ]);
 
       setDepartments(Array.isArray(deptRes) ? deptRes : []);
@@ -76,16 +77,47 @@ const ReportsPage = () => {
         setEmployeesByDeptData(chartData);
       }
 
-      // Mock data para accesos (placeholder)
-      setAccessData([
-        { day: 'Lun', approved: 45, rejected: 5, total: 50 },
-        { day: 'Mar', approved: 52, rejected: 3, total: 55 },
-        { day: 'Mié', approved: 48, rejected: 6, total: 54 },
-        { day: 'Jue', approved: 61, rejected: 2, total: 63 },
-        { day: 'Vie', approved: 58, rejected: 4, total: 62 },
-        { day: 'Sáb', approved: 32, rejected: 8, total: 40 },
-        { day: 'Dom', approved: 28, rejected: 5, total: 33 }
-      ]);
+      // Process access logs data
+      if (Array.isArray(logsRes) && logsRes.length > 0) {
+        const dayMap = new Map<string, { approved: number; rejected: number }>();
+        const dayOrder = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+        logsRes.forEach((log: any) => {
+          const date = new Date(log.accessTimestamp);
+          const dayIndex = date.getDay();
+          const dayName = dayOrder[dayIndex === 0 ? 6 : dayIndex - 1];
+
+          if (!dayMap.has(dayName)) {
+            dayMap.set(dayName, { approved: 0, rejected: 0 });
+          }
+          const dayData = dayMap.get(dayName)!;
+          if (log.isSuccessful) {
+            dayData.approved++;
+          } else {
+            dayData.rejected++;
+          }
+        });
+
+        const chartData = dayOrder
+          .map(day => ({
+            day,
+            approved: dayMap.get(day)?.approved || 0,
+            rejected: dayMap.get(day)?.rejected || 0,
+            total: (dayMap.get(day)?.approved || 0) + (dayMap.get(day)?.rejected || 0)
+          }));
+
+        setAccessData(chartData);
+      } else {
+        setAccessData([
+          { day: 'Lun', approved: 0, rejected: 0, total: 0 },
+          { day: 'Mar', approved: 0, rejected: 0, total: 0 },
+          { day: 'Mié', approved: 0, rejected: 0, total: 0 },
+          { day: 'Jue', approved: 0, rejected: 0, total: 0 },
+          { day: 'Vie', approved: 0, rejected: 0, total: 0 },
+          { day: 'Sáb', approved: 0, rejected: 0, total: 0 },
+          { day: 'Dom', approved: 0, rejected: 0, total: 0 }
+        ]);
+      }
 
       setLastUpdate(new Date());
     } catch (error) {
@@ -284,79 +316,85 @@ const ReportsPage = () => {
                 <FontAwesomeIcon icon={faHistory} className="text-room-primary" />
                 Registros de Acceso
               </h2>
-              <p className="text-xs text-white/40 mt-2">Análisis de intentos de acceso por día</p>
-            </div>
-            <div className="px-4 py-2 bg-room-error/20 border border-room-error/30 rounded-lg">
-              <p className="text-xs font-bold text-room-error uppercase">EN DESARROLLO</p>
+              <p className="text-xs text-white/40 mt-2">Análisis de intentos de acceso por día (datos en tiempo real)</p>
             </div>
           </div>
         </div>
 
-        {/* Access Chart */}
-        <ResponsiveContainer width="100%" height={350}>
-          <LineChart data={accessData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-            <XAxis dataKey="day" stroke="rgba(255,255,255,0.5)" />
-            <YAxis stroke="rgba(255,255,255,0.5)" />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: 'rgba(8, 20, 37, 0.9)',
-                border: '1px solid rgba(37, 99, 235, 0.3)',
-                borderRadius: '8px',
-                color: '#fff'
-              }}
-            />
-            <Legend
-              wrapperStyle={{
-                paddingTop: '20px'
-              }}
-            />
-            <Line
-              type="monotone"
-              dataKey="approved"
-              stroke="#10FB72"
-              strokeWidth={2}
-              dot={{ fill: '#10FB72', r: 5 }}
-              activeDot={{ r: 7 }}
-              name="Aprobados"
-            />
-            <Line
-              type="monotone"
-              dataKey="rejected"
-              stroke="#FF3131"
-              strokeWidth={2}
-              dot={{ fill: '#FF3131', r: 5 }}
-              activeDot={{ r: 7 }}
-              name="Rechazados"
-            />
-            <Line
-              type="monotone"
-              dataKey="total"
-              stroke="#2563EB"
-              strokeWidth={2}
-              strokeDasharray="5 5"
-              dot={{ fill: '#2563EB', r: 5 }}
-              activeDot={{ r: 7 }}
-              name="Total"
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        {accessData.every(d => d.total === 0) ? (
+          <div className="flex flex-col items-center justify-center h-80 gap-4">
+            <FontAwesomeIcon icon={faHistory} className="text-white/20 text-4xl" />
+            <p className="text-white/40 uppercase text-sm font-bold">Sin registros de acceso aún</p>
+          </div>
+        ) : (
+          <>
+            {/* Access Chart */}
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart data={accessData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                <XAxis dataKey="day" stroke="rgba(255,255,255,0.5)" />
+                <YAxis stroke="rgba(255,255,255,0.5)" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'rgba(8, 20, 37, 0.9)',
+                    border: '1px solid rgba(37, 99, 235, 0.3)',
+                    borderRadius: '8px',
+                    color: '#fff'
+                  }}
+                />
+                <Legend
+                  wrapperStyle={{
+                    paddingTop: '20px'
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="approved"
+                  stroke="#10FB72"
+                  strokeWidth={2}
+                  dot={{ fill: '#10FB72', r: 5 }}
+                  activeDot={{ r: 7 }}
+                  name="Aprobados"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="rejected"
+                  stroke="#FF3131"
+                  strokeWidth={2}
+                  dot={{ fill: '#FF3131', r: 5 }}
+                  activeDot={{ r: 7 }}
+                  name="Rechazados"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="total"
+                  stroke="#2563EB"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={{ fill: '#2563EB', r: 5 }}
+                  activeDot={{ r: 7 }}
+                  name="Total"
+                />
+              </LineChart>
+            </ResponsiveContainer>
 
-        {/* Access Stats Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-white/5">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-2">Total Accesos</p>
-            <p className="text-3xl font-black text-room-primary">{approvedAccess + rejectedAccess}</p>
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-2">Aprobados</p>
-            <p className="text-3xl font-black text-room-success">{approvedAccess}</p>
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-2">Rechazados</p>
-            <p className="text-3xl font-black text-room-error">{rejectedAccess}</p>
-          </div>
-        </div>
+            {/* Access Stats Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-white/5">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-2">Total Accesos</p>
+                <p className="text-3xl font-black text-room-primary">{approvedAccess + rejectedAccess}</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-2">Aprobados</p>
+                <p className="text-3xl font-black text-room-success">{approvedAccess}</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-2">Rechazados</p>
+                <p className="text-3xl font-black text-room-error">{rejectedAccess}</p>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Footer Note */}

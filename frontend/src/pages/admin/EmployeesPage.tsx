@@ -16,11 +16,14 @@ import {
   faCircleXmark,
   faShieldHalved,
   faFileUpload,
-  faDownload
+  faDownload,
+  faHistory,
+  faFilePdf
 } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '../../components/globalcomponent/Button';
 import api from '../../services/api';
 import { showAlert } from '../../services/alerts';
+import { useRef } from 'react';
 
 interface Employee {
   id: number;
@@ -40,6 +43,19 @@ interface Department {
   name: string;
 }
 
+interface AccessLog {
+  id: number;
+  attemptedInternalId: string;
+  employeeId?: number;
+  employeeFullName?: string;
+  firstName?: string;
+  lastName?: string;
+  accessTimestamp: string;
+  isSuccessful: boolean;
+  accessType?: string;
+  reasonDenied?: string;
+}
+
 const EmployeesPage = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -52,6 +68,13 @@ const EmployeesPage = () => {
   const [csvFile, setCSVFile] = useState<File | null>(null);
   const [csvLoading, setCSVLoading] = useState(false);
   const [csvResult, setCSVResult] = useState<{successCount: number, errorCount: number, errors: string[]} | null>(null);
+  const [showAccessHistory, setShowAccessHistory] = useState(false);
+  const [selectedEmployeeForHistory, setSelectedEmployeeForHistory] = useState<Employee | null>(null);
+  const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
+  const [accessLogsLoading, setAccessLogsLoading] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const tableRef = useRef<HTMLDivElement>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -90,6 +113,28 @@ const EmployeesPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const fetchAccessHistory = async (employee: Employee) => {
+    try {
+      setAccessLogsLoading(true);
+      const allLogs = await api.get('/access-logs');
+      const logs = (Array.isArray(allLogs) ? allLogs : []).filter(log => log.employeeId === employee.id);
+      setAccessLogs(logs);
+    } catch (error) {
+      console.error('Error fetching access history:', error);
+      showAlert.error('Error', 'No se pudo cargar el historial de acceso.');
+    } finally {
+      setAccessLogsLoading(false);
+    }
+  };
+
+  const handleViewAccessHistory = async (employee: Employee) => {
+    setSelectedEmployeeForHistory(employee);
+    setStartDate('');
+    setEndDate('');
+    setShowAccessHistory(true);
+    await fetchAccessHistory(employee);
   };
 
   const handleEdit = (emp: Employee) => {
@@ -404,6 +449,272 @@ const EmployeesPage = () => {
         </div>
       )}
 
+      {/* Access History Modal */}
+      {showAccessHistory && selectedEmployeeForHistory && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
+          <div className="w-full max-w-4xl bg-[#1f2a3c] border border-white/10 rounded-room shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-[#152031]">
+              <div className="flex items-center gap-3">
+                <FontAwesomeIcon icon={faHistory} className="text-room-primary" />
+                <div>
+                  <h3 className="text-lg font-black uppercase tracking-tight text-white">
+                    Historial de Acceso
+                  </h3>
+                  <p className="text-[10px] text-white/40 mt-1">
+                    {selectedEmployeeForHistory.firstName} {selectedEmployeeForHistory.lastName}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setShowAccessHistory(false)} className="text-white/20 hover:text-white transition-colors">
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
+            </div>
+
+            <div className="p-6 border-b border-white/5 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Fecha Inicio</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full bg-[#040e1f] border border-white/10 rounded-room px-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Fecha Fin</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full bg-[#040e1f] border border-white/10 rounded-room px-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-x-auto p-6">
+              {accessLogsLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="animate-spin">
+                    <FontAwesomeIcon icon={faHistory} className="text-room-primary text-4xl" />
+                  </div>
+                </div>
+              ) : (
+                <div ref={tableRef} className="bg-[#081425] rounded-lg border border-white/10 overflow-hidden">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-[#0f1b2e] border-b border-white/10">
+                        <th className="px-6 py-4 text-[10px] font-black text-room-primary uppercase tracking-[0.2em]">Fecha y Hora</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-room-primary uppercase tracking-[0.2em]">PIN</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-room-primary uppercase tracking-[0.2em]">Estado</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-room-primary uppercase tracking-[0.2em]">Detalles</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {accessLogs
+                        .filter(log => {
+                          if (!startDate && !endDate) return true;
+                          const logDate = new Date(log.accessTimestamp);
+                          const start = startDate ? new Date(startDate) : null;
+                          const end = endDate ? new Date(endDate) : null;
+                          if (start && logDate < start) return false;
+                          if (end) {
+                            const endOfDay = new Date(end);
+                            endOfDay.setHours(23, 59, 59, 999);
+                            if (logDate > endOfDay) return false;
+                          }
+                          
+                          return true;
+                        })
+                        .sort((a, b) => new Date(b.accessTimestamp).getTime() - new Date(a.accessTimestamp).getTime())
+                        .length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="px-6 py-8 text-center text-white/40 text-sm">
+                              Sin registros de acceso
+                            </td>
+                          </tr>
+                        ) : (
+                          accessLogs
+                            .filter(log => {
+                              if (!startDate && !endDate) return true;
+                              const logDate = new Date(log.accessTimestamp);
+                              const start = startDate ? new Date(startDate) : null;
+                              const end = endDate ? new Date(endDate) : null;
+                              if (start && logDate < start) return false;
+                              if (end) {
+                                const endOfDay = new Date(end);
+                                endOfDay.setHours(23, 59, 59, 999);
+                                if (logDate > endOfDay) return false;
+                              }
+                              return true;
+                            })
+                            .sort((a, b) => new Date(b.accessTimestamp).getTime() - new Date(a.accessTimestamp).getTime())
+                            .map(log => (
+                              <tr key={log.id} className="hover:bg-white/[0.02] transition-colors">
+                                <td className="px-6 py-4">
+                                  <p className="text-sm font-mono text-white/70">
+                                    {new Date(log.accessTimestamp).toLocaleString('es-MX')}
+                                  </p>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className="px-3 py-1 bg-room-primary/10 rounded-lg text-[10px] font-black text-room-primary border border-room-primary/30">
+                                    {log.attemptedInternalId}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-2">
+                                    <FontAwesomeIcon
+                                      icon={log.isSuccessful ? faCircleCheck : faCircleXmark}
+                                      className={log.isSuccessful ? 'text-room-success' : 'text-room-error'}
+                                    />
+                                    <span className={`text-[10px] font-bold uppercase ${log.isSuccessful ? 'text-room-success' : 'text-room-error'}`}>
+                                      {log.isSuccessful ? 'Aprobado' : 'Denegado'}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <p className="text-[10px] text-white/50">
+                                    {log.reasonDenied || 'Acceso normal'}
+                                  </p>
+                                </td>
+                              </tr>
+                            ))
+                        )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-white/5 flex gap-4">
+              <Button
+                type="button"
+                onClick={() => setShowAccessHistory(false)}
+                text="Cerrar"
+                iconLeft={faXmark}
+                variant="secondary"
+                className="flex-1 py-3 uppercase text-[10px] tracking-widest font-bold"
+              />
+              <Button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const { jsPDF } = await import('jspdf');
+                    await import('jspdf-autotable');
+
+                    const filteredLogs = accessLogs
+                      .filter(log => {
+                        if (!startDate && !endDate) return true;
+                        const logDate = new Date(log.accessTimestamp);
+                        const start = startDate ? new Date(startDate) : null;
+                        const end = endDate ? new Date(endDate) : null;
+                        if (start && logDate < start) return false;
+                        if (end) {
+                          const endOfDay = new Date(end);
+                          endOfDay.setHours(23, 59, 59, 999);
+                          if (logDate > endOfDay) return false;
+                        }
+                        return true;
+                      })
+                      .sort((a, b) => new Date(b.accessTimestamp).getTime() - new Date(a.accessTimestamp).getTime());
+
+                    const pdf = new jsPDF({
+                      orientation: 'landscape',
+                      unit: 'mm',
+                      format: 'a4'
+                    });
+
+                    pdf.setFillColor(8, 20, 37);
+                    pdf.rect(0, 0, 297, 210, 'F');
+
+                    pdf.setFontSize(16);
+                    pdf.setTextColor(37, 99, 235);
+                    pdf.text(`HISTORIAL DE ACCESO - ROOM 911`, 14, 15);
+
+                    pdf.setFontSize(10);
+                    pdf.setTextColor(255, 255, 255);
+                    pdf.text(`Empleado: ${selectedEmployeeForHistory.firstName} ${selectedEmployeeForHistory.lastName}`, 14, 22);
+                    pdf.text(`Generado: ${new Date().toLocaleString('es-MX')}`, 14, 28);
+
+                    const colWidths = [50, 20, 25, 70];
+                    const headerHeight = 8;
+                    const rowHeight = 7;
+                    let yPos = 35;
+
+                    pdf.setFillColor(37, 99, 235);
+                    pdf.rect(14, yPos - headerHeight + 1, colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], headerHeight, 'F');
+
+                    pdf.setFontSize(9);
+                    pdf.setTextColor(255, 255, 255);
+                    pdf.setFont('helvetica', 'bold');
+                    let xPos = 14;
+                    pdf.text('Fecha y Hora', xPos + 2, yPos - 1);
+                    xPos += colWidths[0];
+                    pdf.text('PIN', xPos + 2, yPos - 1);
+                    xPos += colWidths[1];
+                    pdf.text('Estado', xPos + 2, yPos - 1);
+                    xPos += colWidths[2];
+                    pdf.text('Detalles', xPos + 2, yPos - 1);
+
+                    yPos += 2;
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(8);
+                    let rowColor = true;
+
+                    filteredLogs.forEach((log) => {
+                      if (rowColor) {
+                        pdf.setFillColor(15, 27, 46);
+                      } else {
+                        pdf.setFillColor(8, 20, 37);
+                      }
+                      pdf.rect(14, yPos - rowHeight + 1, colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], rowHeight, 'F');
+
+                      pdf.setTextColor(255, 255, 255);
+                      xPos = 14;
+
+                      const timestamp = new Date(log.accessTimestamp).toLocaleString('es-MX');
+                      pdf.text(timestamp.substring(0, 16), xPos + 2, yPos);
+                      xPos += colWidths[0];
+
+                      pdf.setTextColor(37, 99, 235);
+                      pdf.text(log.attemptedInternalId, xPos + 2, yPos);
+                      xPos += colWidths[1];
+
+                      pdf.setTextColor(log.isSuccessful ? 16 : 255, log.isSuccessful ? 251 : 49, log.isSuccessful ? 114 : 49);
+                      pdf.text(log.isSuccessful ? 'Aprobado' : 'Denegado', xPos + 2, yPos);
+                      xPos += colWidths[2];
+
+                      pdf.setTextColor(255, 255, 255);
+                      const detail = log.reasonDenied || 'Acceso normal';
+                      const detailText = detail.substring(0, 35);
+                      pdf.text(detailText, xPos + 2, yPos);
+
+                      yPos += rowHeight;
+                      rowColor = !rowColor;
+
+                      if (yPos > 190) {
+                        pdf.addPage();
+                        yPos = 20;
+                      }
+                    });
+
+                    pdf.save(`Historial_${selectedEmployeeForHistory.firstName}_${selectedEmployeeForHistory.lastName}.pdf`);
+                  } catch (error) {
+                    console.error('Error generating PDF:', error);
+                    showAlert.error('Error', 'No se pudo generar el PDF');
+                  }
+                }}
+                text="Exportar PDF"
+                iconLeft={faFilePdf}
+                variant="primary"
+                className="flex-1 py-3 uppercase text-[10px] tracking-widest font-bold"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -535,6 +846,13 @@ const EmployeesPage = () => {
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          onClick={() => handleViewAccessHistory(emp)}
+                          text=""
+                          iconLeft={faHistory}
+                          variant="secondary"
+                          className="w-8 h-8 !p-0 !gap-0 rounded-room"
+                        />
                         <Button
                           onClick={() => handleEdit(emp)}
                           text=""

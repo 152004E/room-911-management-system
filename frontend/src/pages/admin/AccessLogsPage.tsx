@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHistory, faSearch, faCircleCheck, faCircleXmark, faClock, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faHistory, faSearch, faCircleCheck, faCircleXmark, faClock, faUser, faRotateRight } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
 
 interface AccessLog {
@@ -20,24 +20,28 @@ const AccessLogsPage = () => {
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [filterSuccess, setFilterSuccess] = useState<'all' | 'success' | 'failed'>('all');
 
   useEffect(() => {
     fetchAccessLogs();
     // Auto-refresh cada 10 segundos
-    const interval = setInterval(fetchAccessLogs, 10000);
+    const interval = setInterval(() => fetchAccessLogs(true), 10000);
     return () => clearInterval(interval);
   }, []);
 
-  const fetchAccessLogs = async () => {
+  const fetchAccessLogs = async (isAutoRefresh = false) => {
+    if (!isAutoRefresh) setIsLoading(true);
+    if (isAutoRefresh) setIsRefreshing(true);
+
     try {
-      setIsLoading(true);
       const response = await api.get('/access-logs');
       setLogs(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Error fetching access logs:', error);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -63,14 +67,26 @@ const AccessLogsPage = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-room-primary/20 rounded-lg flex items-center justify-center border border-room-primary/30">
-          <FontAwesomeIcon icon={faHistory} className="text-room-primary text-xl" />
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-room-primary/20 rounded-lg flex items-center justify-center border border-room-primary/30">
+            <FontAwesomeIcon icon={faHistory} className="text-room-primary text-xl" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-black uppercase tracking-tight text-white">Registros de Acceso</h1>
+            <p className="text-sm text-white/40 mt-1">Historial de todos los intentos de acceso al ROOM 911</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-black uppercase tracking-tight text-white">Registros de Acceso</h1>
-          <p className="text-sm text-white/40 mt-1">Historial de todos los intentos de acceso al ROOM 911</p>
-        </div>
+        <button
+          onClick={() => fetchAccessLogs()}
+          disabled={isRefreshing}
+          className={`px-4 py-2 bg-room-primary text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:brightness-110 transition-all shadow-glow ${
+            isRefreshing ? 'opacity-50' : ''
+          }`}
+        >
+          <FontAwesomeIcon icon={faRotateRight} className={isRefreshing ? 'animate-spin mr-2' : 'mr-2'} />
+          {isRefreshing ? 'Actualizando...' : 'Actualizar'}
+        </button>
       </div>
 
       {/* Stats Cards */}
