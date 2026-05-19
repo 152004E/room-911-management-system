@@ -37,13 +37,24 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public EmployeeDTO save(EmployeeDTO employeeDTO) {
-        Employee employee = toEntity(employeeDTO);
+        Employee employee;
 
-        // Generación automática de Internal ID si es nuevo
-        if (employee.getId() == null) {
+        // Si es actualización, merge con los datos existentes
+        if (employeeDTO.getId() != null) {
+            employee = employeeRepository.findById(employeeDTO.getId())
+                    .orElseThrow(() -> new RuntimeException("Employee not found"));
+            // Actualizar solo los campos que pueden cambiar
+            employee.setFirstName(employeeDTO.getFirstName());
+            employee.setLastName(employeeDTO.getLastName());
+            employee.setEmail(employeeDTO.getEmail());
+            employee.setPhoneNumber(employeeDTO.getPhoneNumber());
+            employee.setIsAuthorized(employeeDTO.getIsAuthorized());
+            // Preservar isActive (no sobreescribir con null)
+        } else {
+            // Es un nuevo empleado
+            employee = toEntity(employeeDTO);
             long count = employeeRepository.count();
             String nextId = String.format("%04d", count + 1);
-            // Asegurarnos que sea único
             while (employeeRepository.findByInternalId(nextId).isPresent()) {
                 count++;
                 nextId = String.format("%04d", count + 1);
