@@ -21,6 +21,7 @@ import {
   faFilePdf
 } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '../../components/globalcomponent/Button';
+import { DateRangePicker } from '../../components/DateRangePicker';
 import api from '../../services/api';
 import { showAlert } from '../../services/alerts';
 import { useRef } from 'react';
@@ -441,27 +442,16 @@ const EmployeesPage = () => {
               </button>
             </div>
 
-            <div className="p-6 border-b border-white/5 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Fecha Inicio</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full bg-[#040e1f] border border-white/10 rounded-room px-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Fecha Fin</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full bg-[#040e1f] border border-white/10 rounded-room px-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
-                  />
-                </div>
-              </div>
+            <div className="p-6 border-b border-white/5">
+              <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-3">
+                Filtrar por período
+              </label>
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+              />
             </div>
 
             <div className="flex-1 overflow-x-auto p-6">
