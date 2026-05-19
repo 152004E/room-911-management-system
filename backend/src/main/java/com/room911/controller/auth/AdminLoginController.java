@@ -1,7 +1,10 @@
 package com.room911.controller.auth;
 
 import com.room911.dto.AdminLoginRequest;
+import com.room911.dto.AdminUserDTO;
 import com.room911.dto.AuthResponse;
+import com.room911.entity.AdminUser;
+import com.room911.repository.AdminUserRepository;
 import com.room911.security.CustomUserDetailsService;
 import com.room911.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +30,9 @@ public class AdminLoginController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private AdminUserRepository adminUserRepository;
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AdminLoginRequest request) {
         try {
@@ -43,5 +49,24 @@ public class AdminLoginController {
         return ResponseEntity.ok(AuthResponse.builder()
                 .token(jwt)
                 .build());
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<AdminUserDTO> getCurrentAdmin(@RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = authHeader.replace("Bearer ", "");
+            String username = jwtUtil.extractUsername(token);
+
+            AdminUser admin = adminUserRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+            return ResponseEntity.ok(AdminUserDTO.builder()
+                    .id(admin.getId())
+                    .username(admin.getUsername())
+                    .email(admin.getEmail())
+                    .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 }

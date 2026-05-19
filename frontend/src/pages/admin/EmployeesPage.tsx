@@ -422,6 +422,31 @@ const EmployeesPage = () => {
             Descargar Ejemplo
           </a>
           <Button
+            onClick={() => {
+              showAlert.confirm(
+                '⚠️ Eliminar todos los empleados',
+                'Esta acción eliminará TODOS los empleados del sistema. No se puede deshacer.',
+                'Eliminar TODO'
+              ).then(async (result) => {
+                if (result.isConfirmed) {
+                  try {
+                    for (const emp of employees) {
+                      await api.delete(`/employees/${emp.id}`);
+                    }
+                    showAlert.success('Completado', 'Todos los empleados han sido eliminados.');
+                    fetchData();
+                  } catch (error) {
+                    showAlert.error('Error', 'No se pudieron eliminar todos los empleados.');
+                  }
+                }
+              });
+            }}
+            text="Eliminar TODO"
+            iconLeft={faTrash}
+            variant="error"
+            className="py-3 px-4 text-[10px] opacity-50 hover:opacity-100"
+          />
+          <Button
             onClick={() => setShowCSVModal(true)}
             text="Importar CSV"
             iconLeft={faFileUpload}
@@ -515,7 +540,7 @@ const EmployeesPage = () => {
                           text=""
                           iconLeft={faEdit}
                           variant="secondary"
-                          className="w-8 h-8 !p-0 rounded-room"
+                          className="w-8 h-8 !p-0 !gap-0 rounded-room"
                         />
                         <Button
                           onClick={async () => {
@@ -537,7 +562,7 @@ const EmployeesPage = () => {
                           text=""
                           iconLeft={faTrash}
                           variant="error"
-                          className="w-8 h-8 !p-0 rounded-room"
+                          className="w-8 h-8 !p-0 !gap-0 rounded-room"
                         />
                       </div>
                     </td>

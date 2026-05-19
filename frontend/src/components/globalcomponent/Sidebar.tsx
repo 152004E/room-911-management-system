@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -10,12 +11,38 @@ import {
   faUserShield,
   faGear,
   faSignOutAlt,
-  faTrash
+  faTrash,
+  faUser
 } from '@fortawesome/free-solid-svg-icons';
+import api from '../../services/api';
+
+interface AdminProfile {
+  id: number;
+  username: string;
+  email: string;
+}
 
 const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [admin, setAdmin] = useState<AdminProfile | null>(null);
+  const [isLoadingAdmin, setIsLoadingAdmin] = useState(true);
+
+  useEffect(() => {
+    fetchCurrentAdmin();
+  }, []);
+
+  const fetchCurrentAdmin = async () => {
+    try {
+      setIsLoadingAdmin(true);
+      const response = await api.get<AdminProfile>('/auth/admin/me');
+      setAdmin(response);
+    } catch (error) {
+      console.error('Error fetching admin profile:', error);
+    } finally {
+      setIsLoadingAdmin(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -27,11 +54,9 @@ const Sidebar = () => {
     { name: 'Empleados', icon: faUsers, path: '/admin/employees' },
     { name: 'Departamentos', icon: faBuilding, path: '/admin/departments' },
     { name: 'Registros de Acceso', icon: faHistory, path: '/admin/access-logs' },
-    { name: 'Cargar CSV', icon: faFileUpload, path: '/admin/upload' },
     { name: 'Informes', icon: faChartLine, path: '/admin/reports' },
     { name: 'Administradores', icon: faUserShield, path: '/admin/admins' },
     { name: 'Elementos Archivados', icon: faTrash, path: '/admin/archived-items' },
-    { name: 'Ajustes', icon: faGear, path: '/admin/settings' },
   ];
 
   return (
@@ -72,19 +97,27 @@ const Sidebar = () => {
       {/* Admin Profile Footer */}
       <div className="p-4 border-t border-white/5 flex items-center justify-between">
         <div className="flex items-center min-w-0">
-          <div className="w-9 h-9 rounded-full overflow-hidden border border-white/10 mr-3 shrink-0">
-            <img 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYz5T3XlXOPL1c5NygZ0lpXT5QLQp-rrPCGdGdFK1x3WtK8CM0ndcipiGWVkAGm-x0dggw4U-Vzdn1vzR5keYEkQnVuRhGqdOXDtqzceex_TUduOrL0SF9r9CXhaXXAhlnOAk1m7uT4nPH2ByrLkvvNr9RRdpZidrZJUgC7hICznZ_GOi-LcY7iy6x7JQIeYzSpl9bvZOw_zcID9oPuKQbihr1ypeGpoqlfH-amowlHh_MmvPCD2zlPPDHcbJsMht8O4c1yKdOPsY" 
-              alt="Admin Avatar"
-              className="w-full h-full object-cover"
-            />
+          <div className="w-9 h-9 rounded-full overflow-hidden border border-white/10 mr-3 shrink-0 bg-room-primary/20 flex items-center justify-center">
+            {isLoadingAdmin ? (
+              <div className="animate-spin">
+                <FontAwesomeIcon icon={faUser} className="text-room-primary text-xs" />
+              </div>
+            ) : (
+              <span className="text-xs font-bold text-room-primary uppercase">
+                {admin?.username?.charAt(0) || 'A'}
+              </span>
+            )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-white truncate">Admin. Principal</p>
-            <p className="text-[9px] text-white/30 truncate">admin@room911.com</p>
+            <p className="text-xs font-bold text-white truncate">
+              {isLoadingAdmin ? 'Cargando...' : admin?.username || 'Admin'}
+            </p>
+            <p className="text-[9px] text-white/30 truncate">
+              {isLoadingAdmin ? '---' : admin?.email || 'email@room911.com'}
+            </p>
           </div>
         </div>
-        <button 
+        <button
           onClick={handleLogout}
           className="text-white/30 hover:text-room-error transition-colors p-2 ml-2"
           title="Cerrar Sesión"

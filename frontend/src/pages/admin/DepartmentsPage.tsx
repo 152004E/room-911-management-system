@@ -254,7 +254,7 @@ const DepartmentsPage = () => {
                           text=""
                           iconLeft={faEdit}
                           variant="secondary"
-                          className="w-8 h-8 !p-0 rounded-room"
+                          className="w-8 h-8 !p-0 !gap-0 rounded-room"
                         />
                         <Button
                           onClick={async () => {
@@ -269,7 +269,7 @@ const DepartmentsPage = () => {
                           text=""
                           iconLeft={faTrash}
                           variant="error"
-                          className="w-8 h-8 !p-0 rounded-room"
+                          className="w-8 h-8 !p-0 !gap-0 rounded-room"
                         />
                       </div>
                     </td>
