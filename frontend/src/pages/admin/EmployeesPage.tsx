@@ -24,37 +24,8 @@ import { Button } from '../../components/globalcomponent/Button';
 import api from '../../services/api';
 import { showAlert } from '../../services/alerts';
 import { useRef } from 'react';
-
-interface Employee {
-  id: number;
-  internalId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-  isAuthorized: boolean;
-  departmentId: number;
-  departmentName: string;
-  createdAt: string;
-}
-
-interface Department {
-  id: number;
-  name: string;
-}
-
-interface AccessLog {
-  id: number;
-  attemptedInternalId: string;
-  employeeId?: number;
-  employeeFullName?: string;
-  firstName?: string;
-  lastName?: string;
-  accessTimestamp: string;
-  isSuccessful: boolean;
-  accessType?: string;
-  reasonDenied?: string;
-}
+import type { Employee, Department, AccessLog } from '../../types/room911.types';
+import { generateAccessHistoryPDF } from '../../utils/generateAccessHistoryPDF';
 
 const EmployeesPage = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -600,106 +571,12 @@ const EmployeesPage = () => {
                 type="button"
                 onClick={async () => {
                   try {
-                    const { jsPDF } = await import('jspdf');
-                    await import('jspdf-autotable');
-
-                    const filteredLogs = accessLogs
-                      .filter(log => {
-                        if (!startDate && !endDate) return true;
-                        const logDate = new Date(log.accessTimestamp);
-                        const start = startDate ? new Date(startDate) : null;
-                        const end = endDate ? new Date(endDate) : null;
-                        if (start && logDate < start) return false;
-                        if (end) {
-                          const endOfDay = new Date(end);
-                          endOfDay.setHours(23, 59, 59, 999);
-                          if (logDate > endOfDay) return false;
-                        }
-                        return true;
-                      })
-                      .sort((a, b) => new Date(b.accessTimestamp).getTime() - new Date(a.accessTimestamp).getTime());
-
-                    const pdf = new jsPDF({
-                      orientation: 'landscape',
-                      unit: 'mm',
-                      format: 'a4'
-                    });
-
-                    pdf.setFillColor(8, 20, 37);
-                    pdf.rect(0, 0, 297, 210, 'F');
-
-                    pdf.setFontSize(16);
-                    pdf.setTextColor(37, 99, 235);
-                    pdf.text(`HISTORIAL DE ACCESO - ROOM 911`, 14, 15);
-
-                    pdf.setFontSize(10);
-                    pdf.setTextColor(255, 255, 255);
-                    pdf.text(`Empleado: ${selectedEmployeeForHistory.firstName} ${selectedEmployeeForHistory.lastName}`, 14, 22);
-                    pdf.text(`Generado: ${new Date().toLocaleString('es-MX')}`, 14, 28);
-
-                    const colWidths = [50, 20, 25, 70];
-                    const headerHeight = 8;
-                    const rowHeight = 7;
-                    let yPos = 35;
-
-                    pdf.setFillColor(37, 99, 235);
-                    pdf.rect(14, yPos - headerHeight + 1, colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], headerHeight, 'F');
-
-                    pdf.setFontSize(9);
-                    pdf.setTextColor(255, 255, 255);
-                    pdf.setFont('helvetica', 'bold');
-                    let xPos = 14;
-                    pdf.text('Fecha y Hora', xPos + 2, yPos - 1);
-                    xPos += colWidths[0];
-                    pdf.text('PIN', xPos + 2, yPos - 1);
-                    xPos += colWidths[1];
-                    pdf.text('Estado', xPos + 2, yPos - 1);
-                    xPos += colWidths[2];
-                    pdf.text('Detalles', xPos + 2, yPos - 1);
-
-                    yPos += 2;
-                    pdf.setFont('helvetica', 'normal');
-                    pdf.setFontSize(8);
-                    let rowColor = true;
-
-                    filteredLogs.forEach((log) => {
-                      if (rowColor) {
-                        pdf.setFillColor(15, 27, 46);
-                      } else {
-                        pdf.setFillColor(8, 20, 37);
-                      }
-                      pdf.rect(14, yPos - rowHeight + 1, colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], rowHeight, 'F');
-
-                      pdf.setTextColor(255, 255, 255);
-                      xPos = 14;
-
-                      const timestamp = new Date(log.accessTimestamp).toLocaleString('es-MX');
-                      pdf.text(timestamp.substring(0, 16), xPos + 2, yPos);
-                      xPos += colWidths[0];
-
-                      pdf.setTextColor(37, 99, 235);
-                      pdf.text(log.attemptedInternalId, xPos + 2, yPos);
-                      xPos += colWidths[1];
-
-                      pdf.setTextColor(log.isSuccessful ? 16 : 255, log.isSuccessful ? 251 : 49, log.isSuccessful ? 114 : 49);
-                      pdf.text(log.isSuccessful ? 'Aprobado' : 'Denegado', xPos + 2, yPos);
-                      xPos += colWidths[2];
-
-                      pdf.setTextColor(255, 255, 255);
-                      const detail = log.reasonDenied || 'Acceso normal';
-                      const detailText = detail.substring(0, 35);
-                      pdf.text(detailText, xPos + 2, yPos);
-
-                      yPos += rowHeight;
-                      rowColor = !rowColor;
-
-                      if (yPos > 190) {
-                        pdf.addPage();
-                        yPos = 20;
-                      }
-                    });
-
-                    pdf.save(`Historial_${selectedEmployeeForHistory.firstName}_${selectedEmployeeForHistory.lastName}.pdf`);
+                    if (selectedEmployeeForHistory) {
+                      await generateAccessHistoryPDF(selectedEmployeeForHistory, accessLogs, {
+                        startDate,
+                        endDate
+                      });
+                    }
                   } catch (error) {
                     console.error('Error generating PDF:', error);
                     showAlert.error('Error', 'No se pudo generar el PDF');
