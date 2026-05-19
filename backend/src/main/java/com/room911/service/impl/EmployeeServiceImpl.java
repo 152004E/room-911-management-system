@@ -1,5 +1,6 @@
 package com.room911.service.impl;
 
+import com.room911.dto.EmployeeCSVRecord;
 import com.room911.dto.EmployeeDTO;
 import com.room911.entity.Department;
 import com.room911.entity.Employee;
@@ -8,7 +9,9 @@ import com.room911.repository.EmployeeRepository;
 import com.room911.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -145,5 +148,87 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .phoneNumber(dto.getPhoneNumber())
                 .isAuthorized(dto.getIsAuthorized())
                 .build();
+    }
+
+    @Override
+    public Map<String, Object> importFromCSV(List<EmployeeCSVRecord> records) {
+        Map<String, Object> result = new HashMap<>();
+        int successCount = 0;
+        int errorCount = 0;
+        List<String> errors = new java.util.ArrayList<>();
+
+        for (int i = 0; i < records.size(); i++) {
+            try {
+                EmployeeCSVRecord record = records.get(i);
+
+                // Validate required fields
+                if (record.getFirstName() == null || record.getFirstName().trim().isEmpty()) {
+                    errors.add("Row " + (i + 2) + ": First name is required");
+                    errorCount++;
+                    continue;
+                }
+                if (record.getLastName() == null || record.getLastName().trim().isEmpty()) {
+                    errors.add("Row " + (i + 2) + ": Last name is required");
+                    errorCount++;
+                    continue;
+                }
+                if (record.getEmail() == null || record.getEmail().trim().isEmpty()) {
+                    errors.add("Row " + (i + 2) + ": Email is required");
+                    errorCount++;
+                    continue;
+                }
+                if (record.getDepartmentId() == null) {
+                    errors.add("Row " + (i + 2) + ": Department ID is required");
+                    errorCount++;
+                    continue;
+                }
+
+                // Check if email already exists
+                if (employeeRepository.findByEmail(record.getEmail()).isPresent()) {
+                    errors.add("Row " + (i + 2) + ": Email '" + record.getEmail() + "' already exists");
+                    errorCount++;
+                    continue;
+                }
+
+                // Check department exists
+                Department dept = departmentRepository.findById(record.getDepartmentId())
+                        .orElse(null);
+                if (dept == null) {
+                    errors.add("Row " + (i + 2) + ": Department ID " + record.getDepartmentId() + " not found");
+                    errorCount++;
+                    continue;
+                }
+
+                // Create employee
+                Employee employee = new Employee();
+                employee.setFirstName(record.getFirstName());
+                employee.setLastName(record.getLastName());
+                employee.setEmail(record.getEmail());
+                employee.setPhoneNumber(record.getPhoneNumber());
+                employee.setIsAuthorized(record.getIsAuthorized() != null ? record.getIsAuthorized() : true);
+                employee.setIsActive(true);
+                employee.setDepartment(dept);
+
+                // Generate unique internal ID
+                long count = employeeRepository.count();
+                String nextId = String.format("%04d", count + 1);
+                while (employeeRepository.findByInternalId(nextId).isPresent()) {
+                    count++;
+                    nextId = String.format("%04d", count + 1);
+                }
+                employee.setInternalId(nextId);
+
+                employeeRepository.save(employee);
+                successCount++;
+            } catch (Exception e) {
+                errors.add("Row " + (i + 2) + ": " + e.getMessage());
+                errorCount++;
+            }
+        }
+
+        result.put("successCount", successCount);
+        result.put("errorCount", errorCount);
+        result.put("errors", errors);
+        return result;
     }
 }

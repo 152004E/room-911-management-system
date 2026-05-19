@@ -1,7 +1,9 @@
 package com.room911.service;
 
+import com.room911.dto.EmployeeCSVRecord;
 import com.room911.dto.EmployeeDTO;
 import java.util.List;
+import java.util.Map;
 
 public interface EmployeeService {
     List<EmployeeDTO> findAll();
@@ -12,4 +14,5 @@ public interface EmployeeService {
     List<EmployeeDTO> findDeleted();
     void restoreById(Long id);
     void deletePermanently(Long id);
+    Map<String, Object> importFromCSV(List<EmployeeCSVRecord> records);
 }
