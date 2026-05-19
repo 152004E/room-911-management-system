@@ -57,13 +57,14 @@ public class EmployeeAccessController {
 
         if (authorized) {
             Employee emp = employeeOpt.get();
+            String deptName = emp.getDepartment() != null ? emp.getDepartment().getName() : "Unknown";
             return ResponseEntity.ok(Map.of(
                 "authorized", true,
                 "message", "Acceso Concedido",
                 "employee", Map.of(
                     "firstName", emp.getFirstName(),
                     "lastName", emp.getLastName(),
-                    "departmentName", emp.getDepartment().getName()
+                    "departmentName", deptName
                 )
             ));
         } else {
