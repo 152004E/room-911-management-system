@@ -8,6 +8,7 @@ import EmployeesPage from './pages/admin/EmployeesPage'
 import DepartmentsPage from './pages/admin/DepartmentsPage'
 import AdminsPage from './pages/admin/AdminsPage'
 import ArchivedItemsPage from './pages/admin/ArchivedItemsPage'
+import ReportsPage from './pages/admin/ReportsPage'
 import Room911Page from './pages/Room911Page'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 
@@ -32,6 +33,7 @@ function App() {
           <Route path="employees" element={<EmployeesPage />} />
           <Route path="departments" element={<DepartmentsPage />} />
           <Route path="admins" element={<AdminsPage />} />
+          <Route path="reports" element={<ReportsPage />} />
           <Route path="archived-items" element={<ArchivedItemsPage />} />
         </Route>
 
