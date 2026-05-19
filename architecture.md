@@ -193,27 +193,38 @@ room-911-management-system/
 
 | Categoría | Tecnología | Versión | Propósito |
 |-----------|-----------|---------|----------|
-| **Framework** | FastAPI | - | API REST ligero y rápido |
-| **Lenguaje** | Python | 3.8+ | Lenguaje de IA/ML |
-| **Servidor ASGI** | Uvicorn | - | Servidor web asincrónico |
-| **Reconocimiento Facial** | face_recognition | - | Detección y comparación de rostros (dlib) |
-| **Visión Computacional** | OpenCV (cv2) | - | Procesamiento de imágenes |
-| **Arrays Numéricos** | NumPy | - | Operaciones numéricas |
-| **Procesamiento Imágenes** | Pillow (PIL) | - | Manipulación de imágenes |
-| **Serialización** | Pydantic | - | Validación y serialización de modelos |
-| **Validación Multipart** | python-multipart | - | Manejo de formularios multipart |
+| **Framework** | FastAPI | 0.104.1 | API REST ligero y rápido |
+| **Lenguaje** | Python | 3.11.9 | Lenguaje de IA/ML |
+| **Servidor ASGI** | Uvicorn | 0.24.0 | Servidor web asincrónico |
+| **Reconocimiento Facial** | face_recognition | 1.3.0 | Detección y comparación de rostros (dlib) |
+| **Visión Computacional** | OpenCV (cv2) | 4.8.1.78 | Procesamiento de imágenes |
+| **Arrays Numéricos** | NumPy | 1.24.3 | Operaciones numéricas |
+| **Procesamiento Imágenes** | Pillow (PIL) | 10.0.1 | Manipulación de imágenes |
+| **Serialización** | Pydantic | 2.4.2 | Validación y serialización de modelos |
+| **Validación Multipart** | python-multipart | 0.0.6 | Manejo de formularios multipart |
 
 **Dependencias en requirements.txt:**
 ```
-fastapi>=0.104.1
-uvicorn[standard]>=0.24.0
-face-recognition>=1.3.5
-opencv-python>=4.8.1.78
-numpy>=1.24.0
-pillow>=10.1.0
-pydantic>=2.4.2
-python-multipart>=0.0.6
-requests>=2.31.0
+fastapi==0.104.1
+uvicorn==0.24.0
+face-recognition==1.3.0
+opencv-python==4.8.1.78
+numpy==1.24.3
+pillow==10.0.1
+python-multipart==0.0.6
+requests==2.31.0
+pydantic==2.4.2
+```
+
+**Setup (Python 3.11 vía pyenv):**
+```bash
+cd ai-service
+pyenv local 3.11.9
+python -m venv venv311
+source venv311/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8001
 ```
 
 ---
@@ -433,6 +444,7 @@ requests>=2.31.0
 - **Orquestación**: Implementar retry logic y circuit breaker para llamadas al AI Service
 
 ### AI Service
+- **Status**: ✅ Funcional con Python 3.11.9 (vía pyenv). Todos los endpoints operacionales.
 - **Tests**: Tests básicos en `test_service.py`; expandir cobertura
 - **Logging**: Implementar logging estructurado (actualmente solo `print`)
 - **Persistencia**: Considerar agregar base de datos para metadatos de rostros
@@ -441,6 +453,7 @@ requests>=2.31.0
 - **Autenticación**: Agregar API keys o JWT para proteger endpoints
 - **Umbrales Dinámicos**: Permitir ajuste de tolerancia por empleado
 - **Validación Facial**: Detección de intentos con fotos/máscaras vs rostros vivos
+- **Venv Setup**: Usar `venv311/` en ai-service (generado con Python 3.11 vía pyenv)
 
 ### Observabilidad
 - **Monitoreo**: Métricas en ambos servicios (latencia, accuracy, falsos positivos)
