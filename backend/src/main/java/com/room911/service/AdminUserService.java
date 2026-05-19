@@ -8,4 +8,7 @@ public interface AdminUserService {
     AdminUserDTO findById(Long id);
     AdminUserDTO save(AdminUserDTO adminUserDTO);
     void deleteById(Long id);
+    List<AdminUserDTO> findDeleted();
+    void restoreById(Long id);
+    void deletePermanently(Long id);
 }

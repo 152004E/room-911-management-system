@@ -18,6 +18,7 @@ public class EmployeeDTO {
     private String email;
     private String phoneNumber;
     private Boolean isAuthorized;
+    private Boolean isActive;
     private Long departmentId;
     private String departmentName;
     private LocalDateTime createdAt;

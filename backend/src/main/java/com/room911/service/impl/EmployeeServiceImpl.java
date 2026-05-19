@@ -22,7 +22,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public List<EmployeeDTO> findAll() {
-        return employeeRepository.findAll().stream()
+        return employeeRepository.findAllByIsActiveTrue().stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
@@ -65,6 +65,33 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public void deleteById(Long id) {
         if (id != null) {
+            employeeRepository.findById(id).ifPresent(employee -> {
+                employee.setIsActive(false);
+                employeeRepository.save(employee);
+            });
+        }
+    }
+
+    @Override
+    public List<EmployeeDTO> findDeleted() {
+        return employeeRepository.findAllByIsActiveFalse().stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void restoreById(Long id) {
+        if (id != null) {
+            employeeRepository.findById(id).ifPresent(employee -> {
+                employee.setIsActive(true);
+                employeeRepository.save(employee);
+            });
+        }
+    }
+
+    @Override
+    public void deletePermanently(Long id) {
+        if (id != null) {
             employeeRepository.deleteById(id);
         }
     }
@@ -85,6 +112,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .email(employee.getEmail())
                 .phoneNumber(employee.getPhoneNumber())
                 .isAuthorized(employee.getIsAuthorized())
+                .isActive(employee.getIsActive())
                 .departmentId(employee.getDepartment().getId())
                 .departmentName(employee.getDepartment().getName())
                 .createdAt(employee.getCreatedAt())

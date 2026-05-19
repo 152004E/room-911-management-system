@@ -36,4 +36,21 @@ public class AdminUserController {
         adminUserService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/archived/list")
+    public ResponseEntity<List<AdminUserDTO>> getArchived() {
+        return ResponseEntity.ok(adminUserService.findDeleted());
+    }
+
+    @PutMapping("/{id}/restore")
+    public ResponseEntity<Void> restore(@PathVariable Long id) {
+        adminUserService.restoreById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/permanent")
+    public ResponseEntity<Void> deletePermanent(@PathVariable Long id) {
+        adminUserService.deletePermanently(id);
+        return ResponseEntity.noContent().build();
+    }
 }

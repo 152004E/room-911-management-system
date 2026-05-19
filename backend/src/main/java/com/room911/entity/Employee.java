@@ -39,6 +39,9 @@ public class Employee {
     @Column(name = "is_authorized", nullable = false)
     private Boolean isAuthorized;
 
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -56,6 +59,7 @@ public class Employee {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         if (isAuthorized == null) isAuthorized = false;
+        if (isActive == null) isActive = true;
     }
 
     @PreUpdate

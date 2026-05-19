@@ -1,16 +1,17 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faShieldHalved, 
-  faChartPie, 
-  faUsers, 
-  faBuilding, 
-  faHistory, 
-  faFileUpload, 
-  faChartLine, 
-  faUserShield, 
+import {
+  faShieldHalved,
+  faChartPie,
+  faUsers,
+  faBuilding,
+  faHistory,
+  faFileUpload,
+  faChartLine,
+  faUserShield,
   faGear,
-  faSignOutAlt
+  faSignOutAlt,
+  faTrash
 } from '@fortawesome/free-solid-svg-icons';
 
 const Sidebar = () => {
@@ -30,6 +31,7 @@ const Sidebar = () => {
     { name: 'Cargar CSV', icon: faFileUpload, path: '/admin/upload' },
     { name: 'Informes', icon: faChartLine, path: '/admin/reports' },
     { name: 'Administradores', icon: faUserShield, path: '/admin/admins' },
+    { name: 'Elementos Archivados', icon: faTrash, path: '/admin/archived-items' },
     { name: 'Ajustes', icon: faGear, path: '/admin/settings' },
   ];
 

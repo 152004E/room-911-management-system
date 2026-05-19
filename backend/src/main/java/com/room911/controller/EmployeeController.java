@@ -48,4 +48,21 @@ public class EmployeeController {
         employeeService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/archived/list")
+    public ResponseEntity<List<EmployeeDTO>> getArchived() {
+        return ResponseEntity.ok(employeeService.findDeleted());
+    }
+
+    @PutMapping("/{id}/restore")
+    public ResponseEntity<Void> restore(@PathVariable Long id) {
+        employeeService.restoreById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/permanent")
+    public ResponseEntity<Void> deletePermanent(@PathVariable Long id) {
+        employeeService.deletePermanently(id);
+        return ResponseEntity.noContent().build();
+    }
 }

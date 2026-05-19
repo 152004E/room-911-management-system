@@ -6,6 +6,7 @@ import DashboardLayout from './layouts/DashboardLayout'
 import DashboardPage from './pages/admin/DashboardPage'
 import EmployeesPage from './pages/admin/EmployeesPage'
 import AdminsPage from './pages/admin/AdminsPage'
+import ArchivedItemsPage from './pages/admin/ArchivedItemsPage'
 import Room911Page from './pages/Room911Page'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 
@@ -29,6 +30,7 @@ function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="employees" element={<EmployeesPage />} />
           <Route path="admins" element={<AdminsPage />} />
+          <Route path="archived-items" element={<ArchivedItemsPage />} />
         </Route>
 
         {/* Ruta de Acceso al Room Protegida */}

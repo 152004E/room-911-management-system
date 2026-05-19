@@ -20,7 +20,7 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     @Override
     public List<AdminUserDTO> findAll() {
-        return adminUserRepository.findAll().stream()
+        return adminUserRepository.findAllByIsActiveTrue().stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
@@ -65,6 +65,33 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     @Override
     public void deleteById(Long id) {
+        if (id != null) {
+            adminUserRepository.findById(id).ifPresent(adminUser -> {
+                adminUser.setIsActive(false);
+                adminUserRepository.save(adminUser);
+            });
+        }
+    }
+
+    @Override
+    public List<AdminUserDTO> findDeleted() {
+        return adminUserRepository.findAllByIsActiveFalse().stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void restoreById(Long id) {
+        if (id != null) {
+            adminUserRepository.findById(id).ifPresent(adminUser -> {
+                adminUser.setIsActive(true);
+                adminUserRepository.save(adminUser);
+            });
+        }
+    }
+
+    @Override
+    public void deletePermanently(Long id) {
         if (id != null) {
             adminUserRepository.deleteById(id);
         }

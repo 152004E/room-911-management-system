@@ -9,4 +9,7 @@ public interface EmployeeService {
     EmployeeDTO save(EmployeeDTO employeeDTO);
     void deleteById(Long id);
     EmployeeDTO findByInternalId(String internalId);
+    List<EmployeeDTO> findDeleted();
+    void restoreById(Long id);
+    void deletePermanently(Long id);
 }
