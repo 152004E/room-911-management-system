@@ -5,6 +5,7 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
 import DashboardLayout from './layouts/DashboardLayout'
 import DashboardPage from './pages/admin/DashboardPage'
 import EmployeesPage from './pages/admin/EmployeesPage'
+import DepartmentsPage from './pages/admin/DepartmentsPage'
 import AdminsPage from './pages/admin/AdminsPage'
 import ArchivedItemsPage from './pages/admin/ArchivedItemsPage'
 import Room911Page from './pages/Room911Page'
@@ -29,6 +30,7 @@ function App() {
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="employees" element={<EmployeesPage />} />
+          <Route path="departments" element={<DepartmentsPage />} />
           <Route path="admins" element={<AdminsPage />} />
           <Route path="archived-items" element={<ArchivedItemsPage />} />
         </Route>

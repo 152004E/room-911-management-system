@@ -31,6 +31,12 @@ public class DepartmentController {
         return ResponseEntity.ok(departmentService.save(departmentDTO));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<DepartmentDTO> update(@PathVariable Long id, @RequestBody DepartmentDTO departmentDTO) {
+        DepartmentDTO updated = departmentService.update(id, departmentDTO);
+        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         departmentService.deleteById(id);

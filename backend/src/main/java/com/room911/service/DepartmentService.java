@@ -7,5 +7,6 @@ public interface DepartmentService {
     List<DepartmentDTO> findAll();
     DepartmentDTO findById(Long id);
     DepartmentDTO save(DepartmentDTO departmentDTO);
+    DepartmentDTO update(Long id, DepartmentDTO departmentDTO);
     void deleteById(Long id);
 }

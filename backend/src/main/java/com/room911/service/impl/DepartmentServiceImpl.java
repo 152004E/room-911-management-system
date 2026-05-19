@@ -39,6 +39,19 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
 
     @Override
+    public DepartmentDTO update(Long id, DepartmentDTO departmentDTO) {
+        if (id == null) return null;
+        return departmentRepository.findById(id)
+                .map(existing -> {
+                    existing.setName(departmentDTO.getName());
+                    existing.setDescription(departmentDTO.getDescription());
+                    Department updated = departmentRepository.save(existing);
+                    return toDTO(updated);
+                })
+                .orElse(null);
+    }
+
+    @Override
     public void deleteById(Long id) {
         if (id != null) {
             departmentRepository.deleteById(id);
