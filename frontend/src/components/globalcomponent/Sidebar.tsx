@@ -1,7 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faShieldHalved,
   faChartPie,
   faUsers,
   faBuilding,
@@ -39,9 +38,7 @@ const Sidebar = () => {
     <nav className="hidden md:flex bg-[#152031] h-screen w-64 flex-col border-r border-white/5 fixed left-0 top-0 z-40">
       {/* Brand Header */}
       <div className="flex items-center px-6 h-24 border-b border-white/5">
-        <div className="w-10 h-10 bg-room-primary/20 rounded flex items-center justify-center border border-room-primary/30 mr-3">
-          <FontAwesomeIcon icon={faShieldHalved} className="text-room-primary text-xl" />
-        </div>
+        <img src="/logo.png" alt="ROOM 911" className="w-12 h-12 mr-3 object-contain" />
         <div>
           <h1 className="text-xl font-bold text-room-primary tracking-tight">ROOM_911</h1>
           <p className="text-[10px] text-white/30 uppercase tracking-widest mt-1">Acceso Seguro</p>

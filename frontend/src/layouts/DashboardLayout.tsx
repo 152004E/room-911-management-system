@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/globalcomponent/Sidebar';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faBell, faShieldHalved } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faBell } from '@fortawesome/free-solid-svg-icons';
 
 const DashboardLayout = () => {
   return (
@@ -15,9 +15,7 @@ const DashboardLayout = () => {
         <header className="h-16 bg-room-dark border-b border-white/5 flex items-center justify-between px-6 shrink-0 z-30">
           {/* Mobile Brand */}
           <div className="flex items-center md:hidden">
-            <div className="w-8 h-8 bg-room-primary/20 rounded flex items-center justify-center border border-room-primary/30 mr-3">
-              <FontAwesomeIcon icon={faShieldHalved} className="text-room-primary text-lg" />
-            </div>
+            <img src="/logo.png" alt="ROOM 911" className="w-10 h-10 mr-3 object-contain" />
             <h1 className="text-lg font-bold tracking-tight uppercase">ROOM_911</h1>
           </div>
 

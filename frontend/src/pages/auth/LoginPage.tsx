@@ -4,7 +4,7 @@ import { Input } from '../../components/globalcomponent/Input';
 import { Button } from '../../components/globalcomponent/Button';
 import { Card } from '../../components/globalcomponent/Card';
 import { SecurityModal } from '../../components/auth/SecurityModal';
-import { faEnvelope, faKey, faRightToBracket, faShieldHalved } from '@fortawesome/free-solid-svg-icons';
+import { faEnvelope, faKey, faRightToBracket } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { authApi } from '../../services/api';
 
@@ -49,9 +49,7 @@ const LoginPage = () => {
       <Card>
         <div className="mb-8 text-center">
           <div className="lg:hidden flex justify-center mb-4">
-            <div className="w-12 h-12 bg-room-primary/20 rounded flex items-center justify-center border border-room-primary/30">
-              <FontAwesomeIcon icon={faShieldHalved} className="text-room-primary text-2xl" />
-            </div>
+            <img src="/logo.png" alt="ROOM 911" className="w-16 h-16 object-contain" />
           </div>
           <h1 className="text-2xl font-bold uppercase tracking-widest mb-1">Portal de Acceso</h1>
           <p className="text-xs text-white/40 font-medium">Por favor, proporcione las credenciales administrativas</p>

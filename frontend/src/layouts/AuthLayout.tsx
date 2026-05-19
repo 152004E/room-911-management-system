@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faShieldHalved, faUserCheck, faTerminal, faKey } from '@fortawesome/free-solid-svg-icons';
+import { faUserCheck, faTerminal } from '@fortawesome/free-solid-svg-icons';
 
 const AuthLayout = () => {
   const location = useLocation();
@@ -8,10 +8,9 @@ const AuthLayout = () => {
 
   const content = {
     title: isRecovery ? "Protocolo de Recuperación de Acceso" : "Protocolo de Terminal Seguro",
-    description: isRecovery 
+    description: isRecovery
       ? "Interfaz de restauración de credenciales para el restablecimiento seguro de privilegios de acceso al sistema."
-      : "Capa de autenticación unificada para operaciones de red de alto nivel y gestión de activos administrativos.",
-    icon: isRecovery ? faKey : faShieldHalved
+      : "Capa de autenticación unificada para operaciones de red de alto nivel y gestión de activos administrativos."
   };
 
   return (
@@ -20,9 +19,7 @@ const AuthLayout = () => {
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-[#040e1f] border-r border-white/5 relative z-10">
         <div className='flex flex-col max-w-md mx-auto my-auto'>
           <div className="flex items-center gap-4 mb-16">
-            <div className="w-10 h-10 bg-room-primary/20 rounded flex items-center justify-center border border-room-primary/30">
-              <FontAwesomeIcon icon={content.icon} className="text-room-primary text-xl" />
-            </div>
+            <img src="/logo.png" alt="ROOM 911" className="w-12 h-12 object-contain" />
             <span className="text-2xl font-bold tracking-tight uppercase">ROOM_911</span>
           </div>
           
