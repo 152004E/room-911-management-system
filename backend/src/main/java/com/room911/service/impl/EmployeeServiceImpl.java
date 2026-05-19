@@ -38,7 +38,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public EmployeeDTO save(EmployeeDTO employeeDTO) {
         Employee employee = toEntity(employeeDTO);
-        
+
         // Generación automática de Internal ID si es nuevo
         if (employee.getId() == null) {
             long count = employeeRepository.count();
@@ -50,7 +50,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             }
             employee.setInternalId(nextId);
         }
-        
+
         Long departmentId = employeeDTO.getDepartmentId();
         if (departmentId == null) {
             throw new RuntimeException("Department ID is required");
@@ -59,7 +59,11 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .orElseThrow(() -> new RuntimeException("Department not found"));
         employee.setDepartment(department);
         Employee saved = employeeRepository.save(employee);
-        return toDTO(saved);
+
+        // Refetch with department eagerly loaded to avoid lazy-loading issues
+        Employee refreshed = employeeRepository.findByIdWithDepartment(saved.getId())
+                .orElse(saved);
+        return toDTO(refreshed);
     }
 
     @Override

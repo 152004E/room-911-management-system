@@ -13,6 +13,9 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     @Query("SELECT e FROM Employee e JOIN FETCH e.department WHERE e.internalId = :internalId")
     Optional<Employee> findByInternalId(@Param("internalId") String internalId);
 
+    @Query("SELECT e FROM Employee e JOIN FETCH e.department WHERE e.id = :id")
+    Optional<Employee> findByIdWithDepartment(@Param("id") Long id);
+
     Optional<Employee> findByEmail(String email);
     List<Employee> findByDepartmentId(Long departmentId);
     List<Employee> findAllByIsActiveTrue();
