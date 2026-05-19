@@ -258,19 +258,12 @@ const DepartmentsPage = () => {
                         />
                         <Button
                           onClick={async () => {
-                            const result = await showAlert.confirm(
-                              '¿Eliminar Departamento?',
-                              `¿Está seguro de eliminar ${dept.name}? Esta acción no se puede deshacer.`,
-                              'Eliminar'
-                            );
-                            if (result.isConfirmed) {
-                              try {
-                                await api.delete(`/departments/${dept.id}`);
-                                showAlert.success('Departamento Eliminado', 'El departamento ha sido removido del sistema.');
-                                fetchData();
-                              } catch (e) {
-                                showAlert.error('Acción Fallida', 'No se pudo eliminar el departamento.');
-                              }
+                            try {
+                              await api.delete(`/departments/${dept.id}`);
+                              showAlert.success('Departamento Archivado', 'El departamento ha sido archivado correctamente.');
+                              fetchData();
+                            } catch (e) {
+                              showAlert.error('Acción Fallida', 'No se pudo archivar el departamento.');
                             }
                           }}
                           text=""

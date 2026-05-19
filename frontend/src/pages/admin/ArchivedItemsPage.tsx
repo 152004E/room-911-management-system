@@ -6,7 +6,8 @@ import {
   faRotateLeft,
   faXmark,
   faCircleCheck,
-  faExclamationTriangle
+  faExclamationTriangle,
+  faBuilding
 } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '../../components/globalcomponent/Button';
 import api from '../../services/api';
@@ -32,14 +33,22 @@ interface ArchivedAdmin {
   createdAt: string;
 }
 
+interface ArchivedDepartment {
+  id: number;
+  name: string;
+  description: string;
+  createdAt: string;
+}
+
 const ArchivedItemsPage = () => {
-  const [activeTab, setActiveTab] = useState<'employees' | 'admins'>('employees');
+  const [activeTab, setActiveTab] = useState<'employees' | 'admins' | 'departments'>('employees');
   const [archivedEmployees, setArchivedEmployees] = useState<ArchivedEmployee[]>([]);
   const [archivedAdmins, setArchivedAdmins] = useState<ArchivedAdmin[]>([]);
+  const [archivedDepartments, setArchivedDepartments] = useState<ArchivedDepartment[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-  const [deleteConfirmType, setDeleteConfirmType] = useState<'employee' | 'admin' | null>(null);
+  const [deleteConfirmType, setDeleteConfirmType] = useState<'employee' | 'admin' | 'department' | null>(null);
 
   useEffect(() => {
     fetchArchivedData();
@@ -48,12 +57,14 @@ const ArchivedItemsPage = () => {
   const fetchArchivedData = async () => {
     try {
       setIsLoading(true);
-      const [empData, adminData] = await Promise.all([
+      const [empData, adminData, deptData] = await Promise.all([
         api.get('/employees/archived/list'),
-        api.get('/admins/archived/list')
+        api.get('/admins/archived/list'),
+        api.get('/departments/archived/list')
       ]);
       setArchivedEmployees(Array.isArray(empData) ? empData : []);
       setArchivedAdmins(Array.isArray(adminData) ? adminData : []);
+      setArchivedDepartments(Array.isArray(deptData) ? deptData : []);
     } catch (error) {
       console.error('Error fetching archived data:', error);
       showAlert.error('Error', 'No se pudieron cargar los elementos archivados.');
@@ -62,9 +73,12 @@ const ArchivedItemsPage = () => {
     }
   };
 
-  const handleRestore = async (id: number, type: 'employee' | 'admin') => {
+  const handleRestore = async (id: number, type: 'employee' | 'admin' | 'department') => {
     try {
-      const endpoint = type === 'employee' ? `/employees/${id}/restore` : `/admins/${id}/restore`;
+      let endpoint;
+      if (type === 'employee') endpoint = `/employees/${id}/restore`;
+      else if (type === 'admin') endpoint = `/admins/${id}/restore`;
+      else endpoint = `/departments/${id}/restore`;
       await api.put(endpoint, {});
       showAlert.success('Restaurado', `El elemento ha sido restaurado exitosamente.`);
       fetchArchivedData();
@@ -73,9 +87,12 @@ const ArchivedItemsPage = () => {
     }
   };
 
-  const handlePermanentDelete = async (id: number, type: 'employee' | 'admin') => {
+  const handlePermanentDelete = async (id: number, type: 'employee' | 'admin' | 'department') => {
     try {
-      const endpoint = type === 'employee' ? `/employees/${id}/permanent` : `/admins/${id}/permanent`;
+      let endpoint;
+      if (type === 'employee') endpoint = `/employees/${id}/permanent`;
+      else if (type === 'admin') endpoint = `/admins/${id}/permanent`;
+      else endpoint = `/departments/${id}/permanent`;
       await api.delete(endpoint);
       showAlert.success('Eliminado Permanentemente', 'El elemento ha sido eliminado de forma permanente.');
       setDeleteConfirmId(null);
@@ -97,6 +114,11 @@ const ArchivedItemsPage = () => {
     a.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     a.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     a.username.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredDepartments = archivedDepartments.filter(d =>
+    d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    d.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -181,6 +203,19 @@ const ArchivedItemsPage = () => {
         >
           Administradores ({archivedAdmins.length})
         </button>
+        <button
+          onClick={() => {
+            setActiveTab('departments');
+            setSearchTerm('');
+          }}
+          className={`px-6 py-3 font-bold uppercase text-[10px] tracking-wider transition-all ${
+            activeTab === 'departments'
+              ? 'text-room-primary border-b-2 border-room-primary'
+              : 'text-white/40 hover:text-white/60'
+          }`}
+        >
+          Departamentos ({archivedDepartments.length})
+        </button>
       </div>
 
       {/* Table Container */}
@@ -205,6 +240,7 @@ const ArchivedItemsPage = () => {
               <p className="text-[10px] uppercase font-black text-room-primary animate-pulse">Consultando Elementos Archivados...</p>
             </div>
           ) : activeTab === 'employees' ? (
+
             <>
               {filteredEmployees.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 gap-4">
@@ -310,6 +346,65 @@ const ArchivedItemsPage = () => {
                               onClick={() => {
                                 setDeleteConfirmId(admin.id);
                                 setDeleteConfirmType('admin');
+                              }}
+                              className="p-2 rounded-lg bg-room-error/10 text-room-error hover:bg-room-error/20 transition-colors"
+                              title="Eliminar Permanentemente"
+                            >
+                              <FontAwesomeIcon icon={faTrash} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </>
+          ) : (
+            <>
+              {filteredDepartments.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-64 gap-4">
+                  <FontAwesomeIcon icon={faTrash} className="text-white/20 text-3xl" />
+                  <p className="text-white/40 uppercase text-sm font-bold">No hay departamentos archivados</p>
+                </div>
+              ) : (
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-[#040e1f]/50 border-b border-white/5">
+                      <th className="px-6 py-4 text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Departamento</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Descripción</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Creado</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-white/30 uppercase tracking-[0.2em] text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filteredDepartments.map((dept) => (
+                      <tr key={dept.id} className="hover:bg-white/[0.02] transition-colors group">
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-room-primary/20 flex items-center justify-center text-room-primary font-black text-xs border border-room-primary/30">
+                              {dept.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-bold text-white text-sm">{dept.name}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 text-sm text-white/60 max-w-xs truncate">{dept.description || '-'}</td>
+                        <td className="px-6 py-5 text-sm text-white/60">{new Date(dept.createdAt).toLocaleDateString('es-MX')}</td>
+                        <td className="px-6 py-5 text-right">
+                          <div className="flex gap-2 justify-end">
+                            <button
+                              onClick={() => handleRestore(dept.id, 'department')}
+                              className="p-2 rounded-lg bg-room-primary/10 text-room-primary hover:bg-room-primary/20 transition-colors"
+                              title="Restaurar"
+                            >
+                              <FontAwesomeIcon icon={faRotateLeft} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setDeleteConfirmId(dept.id);
+                                setDeleteConfirmType('department');
                               }}
                               className="p-2 rounded-lg bg-room-error/10 text-room-error hover:bg-room-error/20 transition-colors"
                               title="Eliminar Permanentemente"
