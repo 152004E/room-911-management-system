@@ -1,20 +1,22 @@
 import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faUsers, 
-  faPlus, 
-  faSearch, 
-  faXmark, 
-  faUser, 
-  faAt, 
-  faPhone, 
-  faBuilding, 
-  faIdCard, 
-  faEdit, 
+import {
+  faUsers,
+  faPlus,
+  faSearch,
+  faXmark,
+  faUser,
+  faAt,
+  faPhone,
+  faBuilding,
+  faIdCard,
+  faEdit,
   faTrash,
   faCircleCheck,
   faCircleXmark,
-  faShieldHalved
+  faShieldHalved,
+  faFileUpload,
+  faDownload
 } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '../../components/globalcomponent/Button';
 import api from '../../services/api';
@@ -44,8 +46,12 @@ const EmployeesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showCSVModal, setShowCSVModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [editingEmployeeId, setEditingEmployeeId] = useState<number | null>(null);
+  const [csvFile, setCSVFile] = useState<File | null>(null);
+  const [csvLoading, setCSVLoading] = useState(false);
+  const [csvResult, setCSVResult] = useState<{successCount: number, errorCount: number, errors: string[]} | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -131,6 +137,34 @@ const EmployeesPage = () => {
     });
     setIsEdit(false);
     setEditingEmployeeId(null);
+  };
+
+  const handleCSVUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!csvFile) {
+      showAlert.error('Error', 'Por favor selecciona un archivo CSV');
+      return;
+    }
+
+    try {
+      setCSVLoading(true);
+      const formDataToSend = new FormData();
+      formDataToSend.append('file', csvFile);
+
+      const response = await api.post('/employees/import-csv', formDataToSend, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      setCSVResult(response);
+      showAlert.success('Importación Completada', `${response.successCount} empleados importados exitosamente.`);
+      setCSVFile(null);
+      fetchData();
+      setTimeout(() => setShowCSVModal(false), 2000);
+    } catch (error: any) {
+      showAlert.error('Error de Importación', error.message || 'No se pudo importar el archivo CSV');
+    } finally {
+      setCSVLoading(false);
+    }
   };
 
   return (
@@ -282,6 +316,96 @@ const EmployeesPage = () => {
         </div>
       )}
 
+      {/* CSV Modal */}
+      {showCSVModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
+          <div className="w-full max-w-lg bg-[#1f2a3c] border border-white/10 rounded-room shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-[#152031]">
+              <div className="flex items-center gap-3">
+                <FontAwesomeIcon icon={faFileUpload} className="text-room-primary" />
+                <h3 className="text-lg font-black uppercase tracking-tight text-white">
+                  Importar Personal desde CSV
+                </h3>
+              </div>
+              <button onClick={() => setShowCSVModal(false)} className="text-white/20 hover:text-white transition-colors">
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCSVUpload} className="p-8 space-y-6">
+              <div className="bg-room-primary/5 border border-room-primary/20 p-4 rounded-room flex items-center gap-4">
+                <div className="w-10 h-10 rounded-room bg-room-primary/10 flex items-center justify-center text-room-primary">
+                  <FontAwesomeIcon icon={faFileUpload} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-room-primary uppercase tracking-widest">
+                    Formato CSV
+                  </p>
+                  <p className="text-xs text-white/60">
+                    Columnas: firstName, lastName, email, phoneNumber, departmentId, isAuthorized
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Selecciona archivo CSV</label>
+                <div className="relative group">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => setCSVFile(e.target.files?.[0] || null)}
+                    className="w-full bg-[#040e1f] border border-white/10 rounded-room px-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-room-primary/20 file:text-room-primary hover:file:bg-room-primary/30"
+                    required
+                    disabled={csvLoading}
+                  />
+                </div>
+                {csvFile && (
+                  <p className="text-[10px] text-room-primary font-mono">
+                    📄 {csvFile.name} ({(csvFile.size / 1024).toFixed(2)} KB)
+                  </p>
+                )}
+              </div>
+
+              {csvResult && (
+                <div className="bg-white/5 border border-room-primary/20 p-4 rounded-room space-y-2">
+                  <p className="text-sm font-bold text-room-success">✓ {csvResult.successCount} importados</p>
+                  {csvResult.errorCount > 0 && (
+                    <p className="text-sm font-bold text-room-error">✗ {csvResult.errorCount} errores</p>
+                  )}
+                  {csvResult.errors.length > 0 && (
+                    <div className="max-h-32 overflow-y-auto">
+                      {csvResult.errors.map((error, idx) => (
+                        <p key={idx} className="text-[10px] text-white/60 font-mono">{error}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-4 pt-2">
+                <Button
+                  type="button"
+                  onClick={() => setShowCSVModal(false)}
+                  text="Cerrar"
+                  iconLeft={faXmark}
+                  variant="secondary"
+                  className="flex-1 py-4 uppercase text-[10px] tracking-widest font-bold"
+                  disabled={csvLoading}
+                />
+                <Button
+                  type="submit"
+                  text={csvLoading ? "Importando..." : "Importar"}
+                  iconLeft={faFileUpload}
+                  variant="primary"
+                  className="flex-1 py-4 uppercase text-[10px] tracking-widest font-bold"
+                  disabled={!csvFile || csvLoading}
+                />
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -290,16 +414,33 @@ const EmployeesPage = () => {
           </h2>
           <p className="text-white/40 text-sm mt-1">Control de acceso y base de datos de empleados del ROOM_911.</p>
         </div>
-        <Button 
-          onClick={() => {
-            resetForm();
-            setShowModal(true);
-          }}
-          text="Añadir Empleado"
-          iconLeft={faPlus}
-          variant="primary"
-          className="shadow-glow py-3 px-8"
-        />
+        <div className="flex gap-3">
+          <a
+            href="/employees_example.csv"
+            download
+            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all border border-white/10 text-sm font-bold uppercase tracking-widest"
+          >
+            <FontAwesomeIcon icon={faDownload} />
+            Descargar Ejemplo
+          </a>
+          <Button
+            onClick={() => setShowCSVModal(true)}
+            text="Importar CSV"
+            iconLeft={faFileUpload}
+            variant="secondary"
+            className="py-3 px-6"
+          />
+          <Button
+            onClick={() => {
+              resetForm();
+              setShowModal(true);
+            }}
+            text="Añadir Empleado"
+            iconLeft={faPlus}
+            variant="primary"
+            className="shadow-glow py-3 px-8"
+          />
+        </div>
       </div>
 
       {/* Table Container */}
