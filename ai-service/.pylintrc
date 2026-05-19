@@ -1,0 +1,55 @@
+[MASTER]
+# Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
+# number of processors available to use.
+jobs=0
+
+# Control the amount of potential inferred values when inferring a single
+# object. This can help the performance when dealing with large functions or
+# complex, nested conditions.
+limit-inference-results=100
+
+# Specify a configuration file.
+#rcfile=
+
+# When enabled, pylint would attempt to guess common misconfiguration and emit
+# user-friendly hints instead of false-positive error messages.
+suggestion-mode=yes
+
+# Allow optimization of some checking when you are confident that you won't
+# introduce bugs. This trades correctness for speed.
+unsafe-load-any-extension=no
+
+[MESSAGES CONTROL]
+# Disable all messages by default, then enable specific ones
+disable=
+    missing-docstring,
+    line-too-long,
+    too-few-public-methods,
+    too-many-arguments,
+    unused-argument,
+    redefined-builtin,
+
+[FORMAT]
+# Maximum number of characters on a single line.
+max-line-length=120
+
+# Regexp for a line that is allowed to be longer than the limit.
+ignore-long-lines=^\s*(# )?<?https?://\S+>?$
+
+[DESIGN]
+# Maximum number of attributes for class
+max-attributes=7
+
+[VARIABLES]
+# A regular expression matching the name of dummy variables (i.e. expected to
+# not be used).
+dummy-variables-rgx=_+$|^dummy
+
+[LOGGING]
+# The type of string formatting that logging.info and other logging functions
+# are expected to use.
+logging-format-style=new
+
+[EXTENSIONS]
+# List of extensions to load.
+load-plugins=
