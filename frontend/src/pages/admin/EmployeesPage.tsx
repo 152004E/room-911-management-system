@@ -151,9 +151,7 @@ const EmployeesPage = () => {
       const formDataToSend = new FormData();
       formDataToSend.append('file', csvFile);
 
-      const response = await api.post('/employees/import-csv', formDataToSend, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const response = await api.post('/employees/import-csv', formDataToSend);
 
       setCSVResult(response);
       showAlert.success('Importación Completada', `${response.successCount} empleados importados exitosamente.`);

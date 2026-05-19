@@ -10,11 +10,13 @@ export const apiCall = async <T = any>(endpoint: string, options: RequestInit = 
 
   // Obtener el token del localStorage
   const token = localStorage.getItem('token');
-  
+
+  const isFormData = options.body instanceof FormData;
+
   const config: RequestInit = {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...options.headers,
     },
@@ -55,8 +57,14 @@ export const apiCall = async <T = any>(endpoint: string, options: RequestInit = 
 // Métodos auxiliares para requests comunes
 export const api = {
   get: <T = any>(endpoint: string) => apiCall<T>(endpoint, { method: 'GET' }),
-  post: <T = any>(endpoint: string, body: any) => apiCall<T>(endpoint, { method: 'POST', body: JSON.stringify(body) }),
-  put: <T = any>(endpoint: string, body: any) => apiCall<T>(endpoint, { method: 'PUT', body: JSON.stringify(body) }),
+  post: <T = any>(endpoint: string, body: any) => apiCall<T>(endpoint, {
+    method: 'POST',
+    body: body instanceof FormData ? body : JSON.stringify(body)
+  }),
+  put: <T = any>(endpoint: string, body: any) => apiCall<T>(endpoint, {
+    method: 'PUT',
+    body: body instanceof FormData ? body : JSON.stringify(body)
+  }),
   delete: <T = any>(endpoint: string) => apiCall<T>(endpoint, { method: 'DELETE' }),
 }
 
