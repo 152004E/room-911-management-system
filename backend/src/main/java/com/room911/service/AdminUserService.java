@@ -7,4 +7,5 @@ public interface AdminUserService {
     List<AdminUserDTO> findAll();
     AdminUserDTO findById(Long id);
     AdminUserDTO save(AdminUserDTO adminUserDTO);
+    void deleteById(Long id);
 }

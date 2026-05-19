@@ -18,6 +18,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '../../components/globalcomponent/Button';
 import api from '../../services/api';
+import { showAlert } from '../../services/alerts';
 
 interface Employee {
   id: number;
@@ -43,6 +44,8 @@ const EmployeesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
+  const [editingEmployeeId, setEditingEmployeeId] = useState<number | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -51,7 +54,8 @@ const EmployeesPage = () => {
     email: '',
     phoneNumber: '',
     departmentId: 1,
-    isAuthorized: true
+    isAuthorized: true,
+    internalId: ''
   });
 
   useEffect(() => {
@@ -63,7 +67,7 @@ const EmployeesPage = () => {
       setIsLoading(true);
       const [empData, deptData] = await Promise.all([
         api.get('/employees'),
-        api.get('/departments') // Asumiendo que existe este endpoint
+        api.get('/departments')
       ]);
       setEmployees(Array.isArray(empData) ? empData : []);
       setDepartments(Array.isArray(deptData) ? deptData : []);
@@ -82,15 +86,36 @@ const EmployeesPage = () => {
     }
   };
 
+  const handleEdit = (emp: Employee) => {
+    setIsEdit(true);
+    setEditingEmployeeId(emp.id);
+    setFormData({
+      firstName: emp.firstName,
+      lastName: emp.lastName,
+      email: emp.email,
+      phoneNumber: emp.phoneNumber || '',
+      departmentId: emp.departmentId,
+      isAuthorized: emp.isAuthorized,
+      internalId: emp.internalId
+    });
+    setShowModal(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/employees', formData);
+       if (isEdit && editingEmployeeId !== null) {
+        await api.put(`/employees/${editingEmployeeId}`, formData);
+        showAlert.success('Personal Actualizado', `La ficha del empleado ${formData.firstName} ${formData.lastName} ha sido actualizada con éxito.`);
+      } else {
+        await api.post('/employees', formData);
+        showAlert.success('Personal Registrado', `El empleado ${formData.firstName} ${formData.lastName} ha sido registrado exitosamente.`);
+      }
       setShowModal(false);
       resetForm();
       fetchData();
     } catch (error) {
-      alert('Error al registrar empleado. Verifique los datos.');
+      showAlert.error('Error de Operación', isEdit ? 'No se pudo actualizar los datos del empleado.' : 'No se pudo registrar al empleado.');
     }
   };
 
@@ -101,8 +126,11 @@ const EmployeesPage = () => {
       email: '',
       phoneNumber: '',
       departmentId: 1,
-      isAuthorized: true
+      isAuthorized: true,
+      internalId: ''
     });
+    setIsEdit(false);
+    setEditingEmployeeId(null);
   };
 
   return (
@@ -110,11 +138,13 @@ const EmployeesPage = () => {
       {/* Modal Premium para Empleados */}
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
-          <div className="w-full max-w-lg bg-[#1f2a3c] border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col">
+          <div className="w-full max-w-lg bg-[#1f2a3c] border border-white/10 rounded-room shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-white/5 flex items-center justify-between bg-[#152031]">
               <div className="flex items-center gap-3">
-                <FontAwesomeIcon icon={faPlus} className="text-room-primary" />
-                <h3 className="text-lg font-black uppercase tracking-tight text-white">Registro de Personal</h3>
+                <FontAwesomeIcon icon={isEdit ? faEdit : faPlus} className="text-room-primary" />
+                <h3 className="text-lg font-black uppercase tracking-tight text-white">
+                  {isEdit ? 'Actualizar Ficha de Personal' : 'Registro de Personal'}
+                </h3>
               </div>
               <button onClick={() => setShowModal(false)} className="text-white/20 hover:text-white transition-colors">
                 <FontAwesomeIcon icon={faXmark} />
@@ -122,14 +152,18 @@ const EmployeesPage = () => {
             </div>
             
             <form onSubmit={handleSubmit} className="p-8 space-y-6">
-              {/* ID Automático Notice */}
-              <div className="bg-room-primary/5 border border-room-primary/20 p-4 rounded-xl flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-room-primary/10 flex items-center justify-center text-room-primary">
+              {/* PIN de Acceso Notice */}
+              <div className="bg-room-primary/5 border border-room-primary/20 p-4 rounded-room flex items-center gap-4">
+                <div className="w-10 h-10 rounded-room bg-room-primary/10 flex items-center justify-center text-room-primary">
                   <FontAwesomeIcon icon={faIdCard} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-room-primary uppercase tracking-widest">PIN de Acceso</p>
-                  <p className="text-xs text-white/60">Generación automática encriptada (R9-XXXX)</p>
+                  <p className="text-[10px] font-black text-room-primary uppercase tracking-widest">
+                    {isEdit ? 'PIN de Acceso Asignado' : 'PIN de Acceso'}
+                  </p>
+                  <p className="text-xs text-white/60">
+                    {isEdit ? `Código de Seguridad: ${formData.internalId}` : 'Generación automática encriptada (R9-XXXX)'}
+                  </p>
                 </div>
               </div>
 
@@ -139,7 +173,7 @@ const EmployeesPage = () => {
                   <div className="relative group">
                     <FontAwesomeIcon icon={faUser} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
                     <input 
-                      className="w-full bg-[#040e1f] border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
+                      className="w-full bg-[#040e1f] border border-white/10 rounded-room pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
                       placeholder="Nombre"
                       value={formData.firstName}
                       onChange={(e) => setFormData({...formData, firstName: e.target.value})}
@@ -152,7 +186,7 @@ const EmployeesPage = () => {
                   <div className="relative group">
                     <FontAwesomeIcon icon={faUser} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
                     <input 
-                      className="w-full bg-[#040e1f] border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
+                      className="w-full bg-[#040e1f] border border-white/10 rounded-room pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
                       placeholder="Apellido"
                       value={formData.lastName}
                       onChange={(e) => setFormData({...formData, lastName: e.target.value})}
@@ -168,7 +202,7 @@ const EmployeesPage = () => {
                   <FontAwesomeIcon icon={faAt} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
                   <input 
                     type="email"
-                    className="w-full bg-[#040e1f] border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
+                    className="w-full bg-[#040e1f] border border-white/10 rounded-room pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
                     placeholder="email@ejemplo.com"
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
@@ -183,7 +217,7 @@ const EmployeesPage = () => {
                   <div className="relative group">
                     <FontAwesomeIcon icon={faBuilding} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
                     <select 
-                      className="w-full bg-[#040e1f] border border-white/10 rounded-xl pl-12 pr-10 py-3 text-sm text-white appearance-none focus:ring-2 focus:ring-room-primary/50 focus:outline-none cursor-pointer"
+                      className="w-full bg-[#040e1f] border border-white/10 rounded-room pl-12 pr-10 py-3 text-sm text-white appearance-none focus:ring-2 focus:ring-room-primary/50 focus:outline-none cursor-pointer"
                       value={formData.departmentId}
                       onChange={(e) => setFormData({...formData, departmentId: parseInt(e.target.value)})}
                     >
@@ -198,7 +232,7 @@ const EmployeesPage = () => {
                   <div className="relative group">
                     <FontAwesomeIcon icon={faPhone} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
                     <input 
-                      className="w-full bg-[#040e1f] border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
+                      className="w-full bg-[#040e1f] border border-white/10 rounded-room pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
                       placeholder="+XX..."
                       value={formData.phoneNumber}
                       onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
@@ -207,7 +241,7 @@ const EmployeesPage = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-[#040e1f] rounded-xl border border-white/5">
+              <div className="flex items-center justify-between p-4 bg-[#040e1f] rounded-room border border-white/5">
                 <div className="flex items-center gap-3">
                   <FontAwesomeIcon icon={faShieldHalved} className={formData.isAuthorized ? 'text-room-success' : 'text-white/20'} />
                   <div>
@@ -227,19 +261,21 @@ const EmployeesPage = () => {
               </div>
 
               <div className="flex gap-4 pt-2">
-                <button 
+                <Button 
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-6 py-4 rounded-xl font-bold border border-white/10 text-white/40 hover:bg-white/5 hover:text-white transition-all uppercase text-[10px] tracking-widest"
-                >
-                  Cerrar
-                </button>
-                <button 
+                  text="Cerrar"
+                  iconLeft={faXmark}
+                  variant="secondary"
+                  className="flex-1 py-4 uppercase text-[10px] tracking-widest font-bold"
+                />
+                <Button 
                   type="submit"
-                  className="flex-1 px-6 py-4 rounded-xl font-bold bg-room-primary text-on-primary-fixed hover:brightness-110 active:scale-95 transition-all shadow-glow uppercase text-[10px] tracking-widest"
-                >
-                  Registrar Personal
-                </button>
+                  text={isEdit ? "Guardar" : "Registrar Personal"}
+                  iconLeft={isEdit ? faCircleCheck : faPlus}
+                  variant="primary"
+                  className="flex-1 py-4 uppercase text-[10px] tracking-widest font-bold"
+                />
               </div>
             </form>
           </div>
@@ -255,7 +291,10 @@ const EmployeesPage = () => {
           <p className="text-white/40 text-sm mt-1">Control de acceso y base de datos de empleados del ROOM_911.</p>
         </div>
         <Button 
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            resetForm();
+            setShowModal(true);
+          }}
           text="Añadir Empleado"
           iconLeft={faPlus}
           variant="primary"
@@ -332,12 +371,35 @@ const EmployeesPage = () => {
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="w-8 h-8 rounded-lg bg-white/5 hover:bg-room-primary/20 text-white/40 hover:text-room-primary transition-all">
-                          <FontAwesomeIcon icon={faEdit} className="text-xs" />
-                        </button>
-                        <button className="w-8 h-8 rounded-lg bg-white/5 hover:bg-room-error/20 text-white/40 hover:text-room-error transition-all">
-                          <FontAwesomeIcon icon={faTrash} className="text-xs" />
-                        </button>
+                        <Button
+                          onClick={() => handleEdit(emp)}
+                          text=""
+                          iconLeft={faEdit}
+                          variant="secondary"
+                          className="w-8 h-8 !p-0 rounded-room"
+                        />
+                        <Button
+                          onClick={async () => {
+                            const result = await showAlert.confirm(
+                              '¿Dar de baja / Eliminar?',
+                              `¿Está seguro de eliminar a ${emp.firstName} ${emp.lastName}? Esta acción no se puede deshacer.`,
+                              'Eliminar'
+                            );
+                            if (result.isConfirmed) {
+                              try {
+                                await api.delete(`/employees/${emp.id}`);
+                                showAlert.success('Registro Eliminado', 'El empleado ha sido removido del sistema.');
+                                fetchData();
+                              } catch (e) {
+                                showAlert.error('Acción Fallida', 'No se pudo eliminar el registro del empleado.');
+                              }
+                            }
+                          }}
+                          text=""
+                          iconLeft={faTrash}
+                          variant="error"
+                          className="w-8 h-8 !p-0 rounded-room"
+                        />
                       </div>
                     </td>
                   </tr>

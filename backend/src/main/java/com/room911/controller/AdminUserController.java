@@ -24,4 +24,16 @@ public class AdminUserController {
     public ResponseEntity<AdminUserDTO> create(@RequestBody AdminUserDTO adminUserDTO) {
         return ResponseEntity.ok(adminUserService.save(adminUserDTO));
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<AdminUserDTO> update(@PathVariable Long id, @RequestBody AdminUserDTO adminUserDTO) {
+        adminUserDTO.setId(id);
+        return ResponseEntity.ok(adminUserService.save(adminUserDTO));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        adminUserService.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }

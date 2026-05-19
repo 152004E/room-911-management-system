@@ -63,6 +63,13 @@ public class AdminUserServiceImpl implements AdminUserService {
         return toDTO(saved);
     }
 
+    @Override
+    public void deleteById(Long id) {
+        if (id != null) {
+            adminUserRepository.deleteById(id);
+        }
+    }
+
     private AdminUserDTO toDTO(AdminUser adminUser) {
         return AdminUserDTO.builder()
                 .id(adminUser.getId())

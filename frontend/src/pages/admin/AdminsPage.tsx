@@ -19,6 +19,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '../../components/globalcomponent/Button';
 import api from '../../services/api';
+import { showAlert } from '../../services/alerts';
 
 interface Admin {
   id: number;
@@ -36,15 +37,18 @@ const AdminsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  
-  // Form State - ID removido (ahora es automático)
+  const [isEdit, setIsEdit] = useState(false);
+  const [editingAdminId, setEditingAdminId] = useState<number | null>(null);
+
+  // Form State
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
     password: '',
     role: 'ADMIN_ROOM_911',
-    isActive: true
+    isActive: true,
+    username: ''
   });
 
   useEffect(() => {
@@ -63,16 +67,36 @@ const AdminsPage = () => {
     }
   };
 
+  const handleEdit = (admin: Admin) => {
+    setIsEdit(true);
+    setEditingAdminId(admin.id);
+    setFormData({
+      fullName: admin.fullName || '',
+      email: admin.email,
+      phone: admin.phone || '',
+      password: '', // Contraseña vacía al editar para que sea opcional
+      role: admin.role,
+      isActive: admin.isActive,
+      username: admin.username
+    });
+    setShowModal(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Enviamos el objeto sin username, el backend lo generará
-      await api.post('/admins', formData);
+      if (isEdit && editingAdminId !== null) {
+        await api.put(`/admins/${editingAdminId}`, formData);
+        showAlert.success('Administrador Actualizado', `La cuenta de administrador ${formData.fullName || formData.username} ha sido actualizada.`);
+      } else {
+        await api.post('/admins', formData);
+        showAlert.success('Administrador Registrado', `El administrador ${formData.fullName} ha sido registrado exitosamente.`);
+      }
       setShowModal(false);
       resetForm();
       fetchAdmins();
     } catch (error) {
-      alert('Error al registrar. Verifique el email institucional.');
+      showAlert.error('Error de Operación', isEdit ? 'No se pudo actualizar los datos del administrador.' : 'No se pudo registrar al administrador.');
     }
   };
 
@@ -83,8 +107,11 @@ const AdminsPage = () => {
       phone: '',
       password: '',
       role: 'ADMIN_ROOM_911',
-      isActive: true
+      isActive: true,
+      username: ''
     });
+    setIsEdit(false);
+    setEditingAdminId(null);
   };
 
   return (
@@ -92,11 +119,13 @@ const AdminsPage = () => {
       {/* Modal - Rediseñado para ID Automático */}
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
-          <div className="w-full max-w-lg bg-[#1f2a3c] border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col">
+          <div className="w-full max-w-lg bg-[#1f2a3c] border border-white/10 rounded-room shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-white/5 flex items-center justify-between bg-[#152031]">
               <div className="flex items-center gap-3">
-                <FontAwesomeIcon icon={faFingerprint} className="text-room-primary animate-pulse" />
-                <h3 className="text-lg font-black uppercase tracking-tight text-white">Registro de Administrador</h3>
+                <FontAwesomeIcon icon={isEdit ? faEdit : faFingerprint} className="text-room-primary animate-pulse" />
+                <h3 className="text-lg font-black uppercase tracking-tight text-white">
+                  {isEdit ? 'Actualizar Credenciales' : 'Registro de Administrador'}
+                </h3>
               </div>
               <button onClick={() => setShowModal(false)} className="text-white/20 hover:text-white transition-colors">
                 <FontAwesomeIcon icon={faXmark} />
@@ -105,13 +134,17 @@ const AdminsPage = () => {
             
             <form onSubmit={handleSubmit} className="p-8 space-y-6">
               {/* Aviso de ID Automático */}
-              <div className="bg-room-primary/5 border border-room-primary/20 p-4 rounded-xl flex items-center gap-4 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-room-primary/10 flex items-center justify-center text-room-primary">
+              <div className="bg-room-primary/5 border border-room-primary/20 p-4 rounded-room flex items-center gap-4 mb-2">
+                <div className="w-10 h-10 rounded-room bg-room-primary/10 flex items-center justify-center text-room-primary">
                   <FontAwesomeIcon icon={faIdCard} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-room-primary uppercase tracking-widest">ID de Acceso</p>
-                  <p className="text-xs text-white/60">Se generará automáticamente (A000X)</p>
+                  <p className="text-[10px] font-black text-room-primary uppercase tracking-widest">
+                    {isEdit ? 'ID de Acceso Asignado' : 'ID de Acceso'}
+                  </p>
+                  <p className="text-xs text-white/60">
+                    {isEdit ? `Código de Seguridad: ${formData.username}` : 'Se generará automáticamente (A000X)'}
+                  </p>
                 </div>
               </div>
 
@@ -121,7 +154,7 @@ const AdminsPage = () => {
                 <div className="relative group">
                   <FontAwesomeIcon icon={faIdCard} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
                   <input 
-                    className="w-full bg-[#040e1f] border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
+                    className="w-full bg-[#040e1f] border border-white/10 rounded-room pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
                     placeholder="Nombre del oficial"
                     value={formData.fullName}
                     onChange={(e) => setFormData({...formData, fullName: e.target.value})}
@@ -138,7 +171,7 @@ const AdminsPage = () => {
                     <FontAwesomeIcon icon={faAt} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
                     <input 
                       type="email"
-                      className="w-full bg-[#040e1f] border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
+                      className="w-full bg-[#040e1f] border border-white/10 rounded-room pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
                       placeholder="oficial@room911.com"
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
@@ -153,7 +186,7 @@ const AdminsPage = () => {
                   <div className="relative group">
                     <FontAwesomeIcon icon={faPhone} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
                     <input 
-                      className="w-full bg-[#040e1f] border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
+                      className="w-full bg-[#040e1f] border border-white/10 rounded-room pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
                       placeholder="+57..."
                       value={formData.phone}
                       onChange={(e) => setFormData({...formData, phone: e.target.value})}
@@ -164,34 +197,38 @@ const AdminsPage = () => {
 
               {/* Contraseña */}
               <div className="space-y-2">
-                <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Contraseña de Seguridad</label>
+                <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">
+                  {isEdit ? 'Nueva Contraseña de Seguridad (Opcional)' : 'Contraseña de Seguridad'}
+                </label>
                 <div className="relative group">
                   <FontAwesomeIcon icon={faLock} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
                   <input 
                     type="password"
-                    className="w-full bg-[#040e1f] border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
-                    placeholder="••••••••"
+                    className="w-full bg-[#040e1f] border border-white/10 rounded-room pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
+                    placeholder={isEdit ? "•••••••• (Dejar en blanco para mantener)" : "••••••••"}
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    required
+                    required={!isEdit}
                   />
                 </div>
               </div>
 
               <div className="flex gap-4 pt-4">
-                <button 
+                <Button 
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-6 py-4 rounded-xl font-bold border border-white/10 text-white/40 hover:bg-white/5 hover:text-white transition-all uppercase text-[10px] tracking-widest"
-                >
-                  Cancelar
-                </button>
-                <button 
+                  text="Cancelar"
+                  iconLeft={faXmark}
+                  variant="secondary"
+                  className="flex-1 py-4 uppercase text-[10px] tracking-widest font-bold"
+                />
+                <Button 
                   type="submit"
-                  className="flex-1 px-6 py-4 rounded-xl font-bold bg-room-primary text-on-primary-fixed hover:brightness-110 active:scale-95 transition-all shadow-glow uppercase text-[10px] tracking-widest"
-                >
-                  Registrar Administrador
-                </button>
+                  text={isEdit ? "Guardar" : "Registrar Administrador"}
+                  iconLeft={isEdit ? faCircleCheck : faPlus}
+                  variant="primary"
+                  className="flex-1 py-4 uppercase text-[10px] tracking-widest font-bold"
+                />
               </div>
             </form>
           </div>
@@ -207,7 +244,10 @@ const AdminsPage = () => {
           <p className="text-white/40 text-sm mt-1">Supervisión jerárquica y control de protocolos de seguridad.</p>
         </div>
         <Button 
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            resetForm();
+            setShowModal(true);
+          }}
           text="Añadir Administrador"
           iconLeft={faPlus}
           variant="primary"
@@ -257,7 +297,7 @@ const AdminsPage = () => {
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-room-primary/20 flex items-center justify-center text-room-primary font-black text-xs border border-room-primary/30">
-                          {admin.username}
+                          AD
                         </div>
                         <div>
                           <p className="text-sm font-bold text-white uppercase tracking-tight">{admin.fullName || 'Oficial'}</p>
@@ -283,12 +323,35 @@ const AdminsPage = () => {
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="w-8 h-8 rounded-lg bg-white/5 hover:bg-room-primary/20 text-white/40 hover:text-room-primary transition-all">
-                          <FontAwesomeIcon icon={faEdit} className="text-xs" />
-                        </button>
-                        <button className="w-8 h-8 rounded-lg bg-white/5 hover:bg-room-error/20 text-white/40 hover:text-room-error transition-all">
-                          <FontAwesomeIcon icon={faTrash} className="text-xs" />
-                        </button>
+                        <Button
+                          onClick={() => handleEdit(admin)}
+                          text=""
+                          iconLeft={faEdit}
+                          variant="secondary"
+                          className="w-8 h-8 !p-0 rounded-room"
+                        />
+                        <Button
+                          onClick={async () => {
+                            const result = await showAlert.confirm(
+                              '¿Dar de baja / Eliminar?',
+                              `¿Está seguro de eliminar al administrador ${admin.fullName || admin.username}? Esta acción no se puede deshacer.`,
+                              'Eliminar'
+                            );
+                            if (result.isConfirmed) {
+                              try {
+                                await api.delete(`/admins/${admin.id}`);
+                                showAlert.success('Registro Eliminado', 'El administrador ha sido removido del sistema.');
+                                fetchAdmins();
+                              } catch (e) {
+                                showAlert.error('Acción Fallida', 'No se pudo eliminar el registro del administrador.');
+                              }
+                            }
+                          }}
+                          text=""
+                          iconLeft={faTrash}
+                          variant="error"
+                          className="w-8 h-8 !p-0 rounded-room"
+                        />
                       </div>
                     </td>
                   </tr>
