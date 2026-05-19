@@ -300,7 +300,7 @@ const ArchivedItemsPage = () => {
                 </table>
               )}
             </>
-          ) : (
+          ) : activeTab === 'admins' ? (
             <>
               {filteredAdmins.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 gap-4">
