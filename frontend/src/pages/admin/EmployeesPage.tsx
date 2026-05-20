@@ -688,31 +688,6 @@ const EmployeesPage = () => {
             Descargar Ejemplo
           </a>
           <Button
-            onClick={() => {
-              showAlert.confirm(
-                '⚠️ Eliminar todos los empleados',
-                'Esta acción eliminará TODOS los empleados del sistema. No se puede deshacer.',
-                'Eliminar TODO'
-              ).then(async (result) => {
-                if (result.isConfirmed) {
-                  try {
-                    for (const emp of employees) {
-                      await api.delete(`/employees/${emp.id}`);
-                    }
-                    showAlert.success('Completado', 'Todos los empleados han sido eliminados.');
-                    fetchData();
-                  } catch (error) {
-                    showAlert.error('Error', 'No se pudieron eliminar todos los empleados.');
-                  }
-                }
-              });
-            }}
-            text="Eliminar TODO"
-            iconLeft={faTrash}
-            variant="error"
-            className="py-3 px-4 text-[10px] opacity-50 hover:opacity-100"
-          />
-          <Button
             onClick={() => setShowCSVModal(true)}
             text="Importar CSV"
             iconLeft={faFileUpload}

@@ -31,6 +31,7 @@ export const SecurityModal = ({ onClose }: SecurityModalProps) => {
   const [message, setMessage] = useState('Ingrese su código de identificación');
   const [employeeInfo, setEmployeeInfo] = useState<{name: string, dept: string} | null>(null);
   const [pendingEmployeeId, setPendingEmployeeId] = useState<number | null>(null);
+  const [pendingEmployee, setPendingEmployee] = useState<{id: number, firstName: string, lastName: string, departmentName: string} | null>(null);
 
   // Simulación de sonidos
   const playSound = (type: 'SUCCESS' | 'ERROR' | 'KEY') => {
@@ -90,6 +91,7 @@ export const SecurityModal = ({ onClose }: SecurityModalProps) => {
           dept: response.employee.departmentName
         });
         setPendingEmployeeId(response.employee.id);
+        setPendingEmployee(response.employee);
         setStatus('FACE_SCAN');
         setMessage('VERIFICACIÓN BIOMÉTRICA REQUERIDA');
       } else {
@@ -247,7 +249,7 @@ export const SecurityModal = ({ onClose }: SecurityModalProps) => {
           setStatus('GRANTED');
           setMessage('ACCESO CONCEDIDO');
           setTimeout(() => {
-            navigate('/room-911', { state: { employee: { ...employeeInfo, id: pendingEmployeeId } } });
+            navigate('/room-911', { state: { employee: pendingEmployee } });
           }, 1500);
         }}
         onError={(msg) => {

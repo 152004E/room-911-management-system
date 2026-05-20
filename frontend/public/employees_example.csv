@@ -1,0 +1,11 @@
+firstName,lastName,email,phoneNumber,departmentId,isAuthorized
+Juan,Pérez,juan.perez@room911.com,+52-55-2001-0001,1,true
+María,García,maria.garcia@room911.com,+52-55-2001-0002,2,true
+Carlos,López,carlos.lopez@room911.com,+52-55-2001-0003,3,false
+Ana,Martínez,ana.martinez@room911.com,+52-55-2001-0004,1,true
+Roberto,Sánchez,roberto.sanchez@room911.com,+52-55-2001-0005,4,true
+Patricia,Hernández,patricia.hernandez@room911.com,+52-55-2001-0006,5,true
+Francisco,Torres,francisco.torres@room911.com,+52-55-2001-0007,2,false
+Elena,Ramírez,elena.ramirez@room911.com,+52-55-2001-0008,3,true
+Manuel,Ruiz,manuel.ruiz@room911.com,+52-55-2001-0009,1,true
+Dolores,Morales,dolores.morales@room911.com,+52-55-2001-0010,4,true

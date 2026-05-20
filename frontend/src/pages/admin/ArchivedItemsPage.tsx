@@ -173,41 +173,6 @@ const ArchivedItemsPage = () => {
           </h2>
           <p className="text-white/40 text-sm mt-1">Restaura o elimina permanentemente elementos del sistema.</p>
         </div>
-        <Button
-          onClick={() => {
-            showAlert.confirm(
-              '⚠️ Eliminar todos los archivados',
-              'Esta acción eliminará PERMANENTEMENTE TODOS los elementos archivados del tipo actual. No se puede deshacer.',
-              'Eliminar TODO'
-            ).then(async (result) => {
-              if (result.isConfirmed) {
-                try {
-                  if (activeTab === 'employees') {
-                    for (const emp of archivedEmployees) {
-                      await api.delete(`/employees/${emp.id}/permanent`);
-                    }
-                  } else if (activeTab === 'admins') {
-                    for (const admin of archivedAdmins) {
-                      await api.delete(`/admins/${admin.id}/permanent`);
-                    }
-                  } else {
-                    for (const dept of archivedDepartments) {
-                      await api.delete(`/departments/${dept.id}/permanent`);
-                    }
-                  }
-                  showAlert.success('Completado', 'Todos los archivados han sido eliminados permanentemente.');
-                  fetchArchivedData();
-                } catch (error) {
-                  showAlert.error('Error', 'No se pudieron eliminar todos los archivados.');
-                }
-              }
-            });
-          }}
-          text="Eliminar TODO"
-          iconLeft={faTrash}
-          variant="error"
-          className="py-3 px-4 text-[10px] opacity-50 hover:opacity-100"
-        />
       </div>
 
       {/* Tabs */}
