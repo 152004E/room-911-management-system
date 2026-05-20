@@ -18,10 +18,13 @@ import {
   faFileUpload,
   faDownload,
   faHistory,
-  faFilePdf
+  faFilePdf,
+  faCamera,
+  faTriangleExclamation
 } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '../../components/globalcomponent/Button';
 import { DateRangePicker } from '../../components/DateRangePicker';
+import { FaceCaptureModal } from '../../components/FaceCaptureModal';
 import api from '../../services/api';
 import { showAlert } from '../../services/alerts';
 import { useRef } from 'react';
@@ -46,6 +49,9 @@ const EmployeesPage = () => {
   const [accessLogsLoading, setAccessLogsLoading] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [showFaceCaptureModal, setShowFaceCaptureModal] = useState(false);
+  const [newlyCreatedEmployeeId, setNewlyCreatedEmployeeId] = useState<number | null>(null);
+  const [editingEmployeeFaceRegistered, setEditingEmployeeFaceRegistered] = useState<boolean | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
 
   // Form State
@@ -109,9 +115,10 @@ const EmployeesPage = () => {
     await fetchAccessHistory(employee);
   };
 
-  const handleEdit = (emp: Employee) => {
+  const handleEdit = async (emp: Employee) => {
     setIsEdit(true);
     setEditingEmployeeId(emp.id);
+    setEditingEmployeeFaceRegistered(null);
     setFormData({
       firstName: emp.firstName,
       lastName: emp.lastName,
@@ -122,6 +129,12 @@ const EmployeesPage = () => {
       internalId: emp.internalId
     });
     setShowModal(true);
+    try {
+      const status = await api.get(`/employees/${emp.id}/face-status`);
+      setEditingEmployeeFaceRegistered(status?.registered ?? false);
+    } catch {
+      setEditingEmployeeFaceRegistered(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -131,8 +144,16 @@ const EmployeesPage = () => {
         await api.put(`/employees/${editingEmployeeId}`, formData);
         showAlert.success('Personal Actualizado', `La ficha del empleado ${formData.firstName} ${formData.lastName} ha sido actualizada con éxito.`);
       } else {
-        await api.post('/employees', formData);
+        const created = await api.post('/employees', formData);
         showAlert.success('Personal Registrado', `El empleado ${formData.firstName} ${formData.lastName} ha sido registrado exitosamente.`);
+        setShowModal(false);
+        resetForm();
+        fetchData();
+        if (created?.id) {
+          setNewlyCreatedEmployeeId(created.id);
+          setShowFaceCaptureModal(true);
+        }
+        return;
       }
       setShowModal(false);
       resetForm();
@@ -309,8 +330,49 @@ const EmployeesPage = () => {
                 </label>
               </div>
 
+              {/* Biometric Section — only in edit mode */}
+              {isEdit && (
+                <div className={`flex items-center justify-between p-4 rounded-room border ${
+                  editingEmployeeFaceRegistered === true
+                    ? 'bg-room-success/5 border-room-success/20'
+                    : editingEmployeeFaceRegistered === false
+                    ? 'bg-room-error/5 border-room-error/20'
+                    : 'bg-white/5 border-white/5'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <FontAwesomeIcon
+                      icon={editingEmployeeFaceRegistered === true ? faCircleCheck : editingEmployeeFaceRegistered === false ? faTriangleExclamation : faCamera}
+                      className={editingEmployeeFaceRegistered === true ? 'text-room-success' : editingEmployeeFaceRegistered === false ? 'text-room-error' : 'text-white/20'}
+                    />
+                    <div>
+                      <p className="text-xs font-bold text-white uppercase">Foto Biométrica</p>
+                      <p className="text-[10px] text-white/30 uppercase">
+                        {editingEmployeeFaceRegistered === null
+                          ? 'Verificando...'
+                          : editingEmployeeFaceRegistered
+                          ? 'Rostro registrado'
+                          : 'Sin foto biométrica'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editingEmployeeId) {
+                        setNewlyCreatedEmployeeId(editingEmployeeId);
+                        setShowFaceCaptureModal(true);
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-room-primary/10 hover:bg-room-primary/20 text-room-primary text-[10px] font-bold uppercase tracking-widest border border-room-primary/20 transition-all"
+                  >
+                    <FontAwesomeIcon icon={faCamera} />
+                    {editingEmployeeFaceRegistered ? 'Actualizar Foto' : 'Registrar Foto'}
+                  </button>
+                </div>
+              )}
+
               <div className="flex gap-4 pt-2">
-                <Button 
+                <Button
                   type="button"
                   onClick={() => setShowModal(false)}
                   text="Cerrar"
@@ -318,7 +380,7 @@ const EmployeesPage = () => {
                   variant="secondary"
                   className="flex-1 py-4 uppercase text-[10px] tracking-widest font-bold"
                 />
-                <Button 
+                <Button
                   type="submit"
                   text={isEdit ? "Guardar" : "Registrar Personal"}
                   iconLeft={isEdit ? faCircleCheck : faPlus}
@@ -580,6 +642,32 @@ const EmployeesPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Face Capture Modal — opens after employee creation */}
+      {showFaceCaptureModal && newlyCreatedEmployeeId && (
+        <FaceCaptureModal
+          employeeId={newlyCreatedEmployeeId}
+          mode="register"
+          onSuccess={() => {
+            showAlert.success('Registro Facial', 'Rostro registrado exitosamente.');
+            setShowFaceCaptureModal(false);
+            if (isEdit) {
+              setEditingEmployeeFaceRegistered(true);
+            } else {
+              setNewlyCreatedEmployeeId(null);
+            }
+          }}
+          onError={(msg) => {
+            showAlert.error('Registro Facial', msg || 'No se pudo registrar el rostro. Puedes intentarlo más tarde.');
+            setShowFaceCaptureModal(false);
+            if (!isEdit) setNewlyCreatedEmployeeId(null);
+          }}
+          onClose={() => {
+            setShowFaceCaptureModal(false);
+            if (!isEdit) setNewlyCreatedEmployeeId(null);
+          }}
+        />
       )}
 
       {/* Header Section */}

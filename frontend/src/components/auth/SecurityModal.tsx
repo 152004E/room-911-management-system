@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faShieldHalved, 
-  faBackspace, 
-  faFingerprint, 
-  faUserShield, 
-  faLock, 
-  faLockOpen, 
+import {
+  faShieldHalved,
+  faBackspace,
+  faFingerprint,
+  faUserShield,
+  faLock,
+  faLockOpen,
   faXmark,
   faDoorOpen,
   faCircleCheck,
@@ -15,13 +15,14 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '../globalcomponent/Button';
 import api from '../../services/api';
+import { FaceCaptureModal } from '../FaceCaptureModal';
 
 interface SecurityModalProps {
   onClose: () => void;
   onVerify?: (code: string) => void;
 }
 
-type AccessState = 'IDLE' | 'VALIDATING' | 'GRANTED' | 'DENIED';
+type AccessState = 'IDLE' | 'VALIDATING' | 'FACE_SCAN' | 'GRANTED' | 'DENIED';
 
 export const SecurityModal = ({ onClose }: SecurityModalProps) => {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ export const SecurityModal = ({ onClose }: SecurityModalProps) => {
   const [status, setStatus] = useState<AccessState>('IDLE');
   const [message, setMessage] = useState('Ingrese su código de identificación');
   const [employeeInfo, setEmployeeInfo] = useState<{name: string, dept: string} | null>(null);
+  const [pendingEmployeeId, setPendingEmployeeId] = useState<number | null>(null);
 
   // Simulación de sonidos
   const playSound = (type: 'SUCCESS' | 'ERROR' | 'KEY') => {
@@ -83,18 +85,13 @@ export const SecurityModal = ({ onClose }: SecurityModalProps) => {
       const response = await api.post('/auth/employee/access', { internalId: code });
       
       if (response.authorized) {
-        playSound('SUCCESS');
-        setStatus('GRANTED');
-        setMessage('ACCESO CONCEDIDO');
         setEmployeeInfo({
           name: `${response.employee.firstName} ${response.employee.lastName}`,
           dept: response.employee.departmentName
         });
-        
-        // Redirigir al interior del Room después de mostrar el éxito brevemente
-        setTimeout(() => {
-          navigate('/room-911', { state: { employee: response.employee } });
-        }, 1500);
+        setPendingEmployeeId(response.employee.id);
+        setStatus('FACE_SCAN');
+        setMessage('VERIFICACIÓN BIOMÉTRICA REQUERIDA');
       } else {
         throw new Error(response.message || 'No autorizado');
       }
@@ -113,10 +110,12 @@ export const SecurityModal = ({ onClose }: SecurityModalProps) => {
   };
 
   return (
+    <>
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
       <div className={`w-full max-w-md bg-[#1f2a3c] border-2 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col transition-all duration-500 ${
-        status === 'GRANTED' ? 'border-room-success shadow-[0_0_30px_rgba(16,211,152,0.2)]' : 
-        status === 'DENIED' ? 'border-room-error shadow-[0_0_30px_rgba(255,89,89,0.2)]' : 'border-white/10'
+        status === 'GRANTED' ? 'border-room-success shadow-[0_0_30px_rgba(16,211,152,0.2)]' :
+        status === 'DENIED' ? 'border-room-error shadow-[0_0_30px_rgba(255,89,89,0.2)]' :
+        status === 'FACE_SCAN' ? 'border-room-primary shadow-[0_0_30px_rgba(0,180,255,0.15)]' : 'border-white/10'
       }`}>
         
         {/* Header - Terminal Style */}
@@ -238,5 +237,38 @@ export const SecurityModal = ({ onClose }: SecurityModalProps) => {
         </div>
       </div>
     </div>
+
+    {status === 'FACE_SCAN' && pendingEmployeeId && (
+      <FaceCaptureModal
+        employeeId={pendingEmployeeId}
+        mode="verify"
+        onSuccess={() => {
+          playSound('SUCCESS');
+          setStatus('GRANTED');
+          setMessage('ACCESO CONCEDIDO');
+          setTimeout(() => {
+            navigate('/room-911', { state: { employee: { ...employeeInfo, id: pendingEmployeeId } } });
+          }, 1500);
+        }}
+        onError={(msg) => {
+          playSound('ERROR');
+          setStatus('DENIED');
+          setMessage(msg || 'BIOMETRÍA NO COINCIDE');
+          setTimeout(() => {
+            setStatus('IDLE');
+            setCode('');
+            setPendingEmployeeId(null);
+            setMessage('Ingrese su código de identificación');
+          }, 2000);
+        }}
+        onClose={() => {
+          setStatus('IDLE');
+          setCode('');
+          setPendingEmployeeId(null);
+          setMessage('Ingrese su código de identificación');
+        }}
+      />
+    )}
+    </>
   );
 };

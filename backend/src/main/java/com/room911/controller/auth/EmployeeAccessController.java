@@ -62,6 +62,7 @@ public class EmployeeAccessController {
                 "authorized", true,
                 "message", "Acceso Concedido",
                 "employee", Map.of(
+                    "id", emp.getId(),
                     "firstName", emp.getFirstName(),
                     "lastName", emp.getLastName(),
                     "departmentName", deptName

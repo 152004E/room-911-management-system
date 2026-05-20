@@ -1,14 +1,14 @@
 package com.room911.config;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
 
-/**
- * Configuración general de la aplicación
- * Aquí se pueden agregar configuraciones adicionales como Security, Caching, etc.
- */
 @Configuration
 public class AppConfig {
 
-    // Configuraciones adicionales pueden ir aquí
-
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
 }
