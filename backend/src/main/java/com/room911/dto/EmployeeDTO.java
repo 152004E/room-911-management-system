@@ -21,6 +21,7 @@ public class EmployeeDTO {
     private Boolean isActive;
     private Long departmentId;
     private String departmentName;
+    private Boolean isSystemAdmin;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

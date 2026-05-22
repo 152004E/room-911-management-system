@@ -52,6 +52,9 @@ public class Employee {
     @JoinColumn(name = "department_id", nullable = false)
     private Department department;
 
+    @OneToOne(mappedBy = "employee", cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = true)
+    private AdminUser adminUser;
+
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL)
     private List<AccessLog> accessLogs;
 

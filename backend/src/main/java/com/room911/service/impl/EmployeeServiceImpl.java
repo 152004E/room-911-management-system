@@ -25,7 +25,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public List<EmployeeDTO> findAll() {
-        return employeeRepository.findAllByIsActiveTrue().stream()
+        return employeeRepository.findAllActiveNonAdmin().stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
@@ -42,9 +42,9 @@ public class EmployeeServiceImpl implements EmployeeService {
     public EmployeeDTO save(EmployeeDTO employeeDTO) {
         Employee employee;
 
-        // Si es actualización, merge con los datos existentes
-        if (employeeDTO.getId() != null) {
-            employee = employeeRepository.findById(employeeDTO.getId())
+        Long empDtoId = employeeDTO.getId();
+        if (empDtoId != null) {
+            employee = employeeRepository.findById(empDtoId)
                     .orElseThrow(() -> new RuntimeException("Employee not found"));
             // Actualizar solo los campos que pueden cambiar
             employee.setFirstName(employeeDTO.getFirstName());
@@ -133,6 +133,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .isActive(employee.getIsActive())
                 .departmentId(employee.getDepartment().getId())
                 .departmentName(employee.getDepartment().getName())
+                .isSystemAdmin(employee.getAdminUser() != null)
                 .createdAt(employee.getCreatedAt())
                 .updatedAt(employee.getUpdatedAt())
                 .build();
@@ -177,7 +178,8 @@ public class EmployeeServiceImpl implements EmployeeService {
                     errorCount++;
                     continue;
                 }
-                if (record.getDepartmentId() == null) {
+                Long deptId = record.getDepartmentId();
+                if (deptId == null) {
                     errors.add("Row " + (i + 2) + ": Department ID is required");
                     errorCount++;
                     continue;
@@ -191,7 +193,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 }
 
                 // Check department exists
-                Department dept = departmentRepository.findById(record.getDepartmentId())
+                Department dept = departmentRepository.findById(deptId)
                         .orElse(null);
                 if (dept == null) {
                     errors.add("Row " + (i + 2) + ": Department ID " + record.getDepartmentId() + " not found");

@@ -30,11 +30,12 @@ public class FacialRecognitionController {
 
     @PostMapping("/auth/employee/verify-face")
     public ResponseEntity<?> verifyFace(@RequestBody FaceVerificationRequest request) {
-        if (request.getEmployeeId() == null || request.getImageBase64() == null) {
+        Long employeeId = request.getEmployeeId();
+        if (employeeId == null || request.getImageBase64() == null) {
             return ResponseEntity.badRequest().body(Map.of("message", "employeeId and imageBase64 required"));
         }
 
-        Optional<Employee> employeeOpt = employeeRepository.findById(request.getEmployeeId());
+        Optional<Employee> employeeOpt = employeeRepository.findById(employeeId);
         if (employeeOpt.isEmpty()) {
             return ResponseEntity.status(404).body(Map.of("message", "Employee not found"));
         }
@@ -64,6 +65,10 @@ public class FacialRecognitionController {
             @RequestBody FaceRegistrationRequest request) {
         if (request.getImageBase64() == null) {
             return ResponseEntity.badRequest().body(Map.of("message", "imageBase64 required"));
+        }
+
+        if (id == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "id required"));
         }
 
         if (employeeRepository.findById(id).isEmpty()) {

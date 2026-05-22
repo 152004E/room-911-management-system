@@ -20,4 +20,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     List<Employee> findByDepartmentId(Long departmentId);
     List<Employee> findAllByIsActiveTrue();
     List<Employee> findAllByIsActiveFalse();
+
+    @Query("SELECT e FROM Employee e JOIN FETCH e.department WHERE e.isActive = true AND e.adminUser IS NULL")
+    List<Employee> findAllActiveNonAdmin();
 }

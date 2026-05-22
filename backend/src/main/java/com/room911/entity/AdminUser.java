@@ -20,6 +20,10 @@ public class AdminUser {
     @Column(name = "admin_user_id")
     private Long id;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", nullable = false, unique = true)
+    private Employee employee;
+
     @Column(nullable = false, unique = true, length = 100)
     private String username;
 
@@ -28,15 +32,6 @@ public class AdminUser {
 
     @Column(nullable = false, length = 50)
     private String role;
-
-    @Column(nullable = false, unique = true, length = 150)
-    private String email;
-
-    @Column(name = "full_name", length = 200)
-    private String fullName;
-
-    @Column(length = 20)
-    private String phone;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;

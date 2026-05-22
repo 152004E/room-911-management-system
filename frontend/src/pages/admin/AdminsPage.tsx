@@ -3,30 +3,30 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faUserShield, 
   faPlus, 
-  faShieldHalved, 
   faCircleCheck, 
-  faCircleXmark, 
-  faClock, 
   faEdit,
   faTrash,
   faSearch,
   faXmark,
-  faAt,
   faLock,
-  faPhone,
   faIdCard,
-  faFingerprint
+  faFingerprint,
+  faUser,
+  faShieldHalved,
+  faChevronDown,
+  faInfoCircle
 } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '../../components/globalcomponent/Button';
 import api from '../../services/api';
 import { showAlert } from '../../services/alerts';
+import type { Employee } from '../../types/room911.types';
 
 interface Admin {
   id: number;
+  employeeId: number;
+  employeeName: string;
+  employeeEmail: string;
   username: string;
-  fullName: string;
-  email: string;
-  phone: string;
   role: string;
   isActive: boolean;
   createdAt: string;
@@ -34,25 +34,24 @@ interface Admin {
 
 const AdminsPage = () => {
   const [admins, setAdmins] = useState<Admin[]>([]);
+  const [availableEmployees, setAvailableEmployees] = useState<Employee[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [employeeSearch, setEmployeeSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [editingAdminId, setEditingAdminId] = useState<number | null>(null);
+  const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
 
-  // Form State
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
+    employeeId: 0,
     password: '',
-    role: 'ADMIN_ROOM_911',
-    isActive: true,
-    username: ''
+    isActive: true
   });
 
   useEffect(() => {
     fetchAdmins();
+    fetchAvailableEmployees();
   }, []);
 
   const fetchAdmins = async () => {
@@ -67,30 +66,63 @@ const AdminsPage = () => {
     }
   };
 
+  const fetchAvailableEmployees = async () => {
+    try {
+      const data = await api.get('/employees');
+      setAvailableEmployees(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching available employees:', error);
+    }
+  };
+
+  const [editingAdminData, setEditingAdminData] = useState<{ username: string; employeeName: string } | null>(null);
+
+  const selectedEmployee = availableEmployees.find(e => e.id === formData.employeeId);
+
+  const filteredEmployees = availableEmployees.filter(e => {
+    const search = employeeSearch.toLowerCase();
+    return (
+      e.firstName.toLowerCase().includes(search) ||
+      e.lastName.toLowerCase().includes(search) ||
+      e.internalId.toLowerCase().includes(search) ||
+      e.email.toLowerCase().includes(search)
+    );
+  });
+
   const handleEdit = (admin: Admin) => {
     setIsEdit(true);
     setEditingAdminId(admin.id);
+    setEditingAdminData({ username: admin.username, employeeName: admin.employeeName });
     setFormData({
-      fullName: admin.fullName || '',
-      email: admin.email,
-      phone: admin.phone || '',
-      password: '', // Contraseña vacía al editar para que sea opcional
-      role: admin.role,
-      isActive: admin.isActive,
-      username: admin.username
+      employeeId: admin.employeeId,
+      password: '',
+      isActive: admin.isActive
     });
+    setEmployeeSearch(admin.employeeName || '');
     setShowModal(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isEdit && !formData.employeeId) {
+      showAlert.error('Error', 'Debe seleccionar un empleado.');
+      return;
+    }
     try {
+      const payload: any = {
+        employeeId: formData.employeeId,
+        password: formData.password,
+        isActive: formData.isActive
+      };
+
       if (isEdit && editingAdminId !== null) {
-        await api.put(`/admins/${editingAdminId}`, formData);
-        showAlert.success('Administrador Actualizado', `La cuenta de administrador ${formData.fullName || formData.username} ha sido actualizada.`);
+        payload.id = editingAdminId;
+        payload.username = editingAdminData?.username;
+        await api.put(`/admins/${editingAdminId}`, payload);
+        showAlert.success('Administrador Actualizado', `La cuenta ha sido actualizada.`);
       } else {
-        await api.post('/admins', formData);
-        showAlert.success('Administrador Registrado', `El administrador ${formData.fullName} ha sido registrado exitosamente.`);
+        const created = await api.post('/admins', payload);
+        showAlert.success('Administrador Registrado', `El administrador "${created.username}" ha sido registrado exitosamente.`);
       }
       setShowModal(false);
       resetForm();
@@ -102,21 +134,22 @@ const AdminsPage = () => {
 
   const resetForm = () => {
     setFormData({
-      fullName: '',
-      email: '',
-      phone: '',
+      employeeId: 0,
       password: '',
-      role: 'ADMIN_ROOM_911',
-      isActive: true,
-      username: ''
+      isActive: true
     });
+    setEmployeeSearch('');
     setIsEdit(false);
     setEditingAdminId(null);
+    setEditingAdminData(null);
   };
+
+  const generatedUsername = !isEdit && selectedEmployee
+    ? `${selectedEmployee.firstName.toLowerCase()}.${selectedEmployee.lastName.toLowerCase()}`.replace(/[^a-z0-9.]/g, '')
+    : '';
 
   return (
     <div className="space-y-8 animate-fade-in relative">
-      {/* Modal - Rediseñado para ID Automático */}
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
           <div className="w-full max-w-lg bg-[#1f2a3c] border border-white/10 rounded-room shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col">
@@ -131,81 +164,121 @@ const AdminsPage = () => {
                 <FontAwesomeIcon icon={faXmark} />
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-8 space-y-6">
-              {/* Aviso de ID Automático */}
-              <div className="bg-room-primary/5 border border-room-primary/20 p-4 rounded-room flex items-center gap-4 mb-2">
-                <div className="w-10 h-10 rounded-room bg-room-primary/10 flex items-center justify-center text-room-primary">
-                  <FontAwesomeIcon icon={faIdCard} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-room-primary uppercase tracking-widest">
-                    {isEdit ? 'ID de Acceso Asignado' : 'ID de Acceso'}
-                  </p>
-                  <p className="text-xs text-white/60">
-                    {isEdit ? `Código de Seguridad: ${formData.username}` : 'Se generará automáticamente (A000X)'}
-                  </p>
+              {/* Empleado */}
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">
+                  Empleado
+                </label>
+                <div className="relative">
+                  <div className="relative group">
+                    <FontAwesomeIcon icon={faUser} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors z-10" />
+                    <input
+                      type="text"
+                      className="w-full bg-[#040e1f] border border-white/10 rounded-room pl-12 pr-10 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all cursor-pointer"
+                      placeholder="Buscar empleado por nombre o ID..."
+                      value={isEdit ? (selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName} (${selectedEmployee.internalId})` : employeeSearch) : employeeSearch}
+                      onChange={(e) => {
+                        setEmployeeSearch(e.target.value);
+                        if (!isEdit) {
+                          setFormData({...formData, employeeId: 0});
+                          setShowEmployeeDropdown(true);
+                        }
+                      }}
+                      onFocus={() => !isEdit && setShowEmployeeDropdown(true)}
+                      readOnly={isEdit}
+                      required={!isEdit}
+                    />
+                    <FontAwesomeIcon
+                      icon={faChevronDown}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none"
+                    />
+                  </div>
+
+                  {showEmployeeDropdown && !isEdit && (
+                    <div className="absolute z-50 mt-1 w-full bg-[#1f2a3c] border border-white/10 rounded-room shadow-2xl max-h-60 overflow-y-auto">
+                      {filteredEmployees.length === 0 ? (
+                        <div className="p-4 text-xs text-white/40 text-center">No hay empleados disponibles</div>
+                      ) : (
+                        filteredEmployees.map(emp => (
+                          <button
+                            type="button"
+                            key={emp.id}
+                            className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0 ${
+                              formData.employeeId === emp.id ? 'bg-room-primary/10' : ''
+                            }`}
+                            onClick={() => {
+                              setFormData({...formData, employeeId: emp.id});
+                              setEmployeeSearch(`${emp.firstName} ${emp.lastName} (${emp.internalId})`);
+                              setShowEmployeeDropdown(false);
+                            }}
+                          >
+                            <div className="w-8 h-8 rounded-full bg-room-primary/20 flex items-center justify-center text-room-primary font-black text-[10px] border border-room-primary/30 shrink-0">
+                              {emp.internalId}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-white uppercase truncate">{emp.firstName} {emp.lastName}</p>
+                              <p className="text-[10px] text-white/40 truncate">{emp.email} · {emp.departmentName}</p>
+                            </div>
+                            <span className="text-[9px] font-mono text-room-primary shrink-0">{emp.internalId}</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {isEdit && selectedEmployee && (
+                    <div className="mt-2 flex items-center gap-2 px-4 py-2 bg-room-primary/5 border border-room-primary/20 rounded-room">
+                      <div className="w-6 h-6 rounded-full bg-room-primary/20 flex items-center justify-center text-room-primary font-black text-[9px] border border-room-primary/30">
+                        {selectedEmployee.internalId}
+                      </div>
+                      <p className="text-xs text-white/60">
+                        {selectedEmployee.firstName} {selectedEmployee.lastName} · {selectedEmployee.email}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Nombre Completo */}
+              {/* Username - auto-generado en creación / solo lectura en edición */}
               <div className="space-y-2">
-                <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Nombre Completo</label>
+                <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">
+                  Usuario de Ingreso
+                </label>
                 <div className="relative group">
-                  <FontAwesomeIcon icon={faIdCard} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
-                  <input 
-                    className="w-full bg-[#040e1f] border border-white/10 rounded-room pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
-                    placeholder="Nombre del oficial"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                    required
+                  <FontAwesomeIcon icon={faIdCard} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors z-10" />
+                  <input
+                    className="w-full bg-[#040e1f] border border-white/10 rounded-room pl-12 pr-4 py-3 text-sm text-white/60 focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all cursor-not-allowed"
+                    value={isEdit ? (editingAdminData?.username || '') : generatedUsername}
+                    readOnly
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Email */}
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Email Institucional</label>
-                  <div className="relative group">
-                    <FontAwesomeIcon icon={faAt} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
-                    <input 
-                      type="email"
-                      className="w-full bg-[#040e1f] border border-white/10 rounded-room pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
-                      placeholder="oficial@room911.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Teléfono */}
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Teléfono Acceso</label>
-                  <div className="relative group">
-                    <FontAwesomeIcon icon={faPhone} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
-                    <input 
-                      className="w-full bg-[#040e1f] border border-white/10 rounded-room pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
-                      placeholder="+57..."
-                      value={formData.phone}
-                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    />
-                  </div>
-                </div>
+                {!isEdit && selectedEmployee && (
+                  <p className="flex items-center gap-1 text-[10px] text-room-primary">
+                    <FontAwesomeIcon icon={faInfoCircle} />
+                    Se generará automáticamente desde el nombre del empleado
+                  </p>
+                )}
+                {isEdit && (
+                  <p className="flex items-center gap-1 text-[10px] text-white/40">
+                    <FontAwesomeIcon icon={faInfoCircle} />
+                    El usuario no se puede modificar
+                  </p>
+                )}
               </div>
 
               {/* Contraseña */}
               <div className="space-y-2">
                 <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">
-                  {isEdit ? 'Nueva Contraseña de Seguridad (Opcional)' : 'Contraseña de Seguridad'}
+                  {isEdit ? 'Nueva Contraseña (Opcional)' : 'Contraseña'}
                 </label>
                 <div className="relative group">
                   <FontAwesomeIcon icon={faLock} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
-                  <input 
+                  <input
                     type="password"
                     className="w-full bg-[#040e1f] border border-white/10 rounded-room pl-12 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-room-primary/50 focus:outline-none transition-all"
-                    placeholder={isEdit ? "•••••••• (Dejar en blanco para mantener)" : "••••••••"}
+                    placeholder={isEdit ? "•••••••• (dejar en blanco para mantener)" : "••••••••"}
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
                     required={!isEdit}
@@ -213,8 +286,28 @@ const AdminsPage = () => {
                 </div>
               </div>
 
+              {/* isActive */}
+              <div className="flex items-center justify-between p-4 bg-[#040e1f] rounded-room border border-white/5">
+                <div className="flex items-center gap-3">
+                  <FontAwesomeIcon icon={faShieldHalved} className={formData.isActive ? 'text-room-success' : 'text-white/20'} />
+                  <div>
+                    <p className="text-xs font-bold text-white uppercase">Cuenta Activa</p>
+                    <p className="text-[10px] text-white/30 uppercase">Habilitar acceso al sistema</p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isActive}
+                    onChange={(e) => setFormData({...formData, isActive: e.target.checked})}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-white/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-room-primary"></div>
+                </label>
+              </div>
+
               <div className="flex gap-4 pt-4">
-                <Button 
+                <Button
                   type="button"
                   onClick={() => setShowModal(false)}
                   text="Cancelar"
@@ -222,7 +315,7 @@ const AdminsPage = () => {
                   variant="secondary"
                   className="flex-1 py-4 uppercase text-[10px] tracking-widest font-bold"
                 />
-                <Button 
+                <Button
                   type="submit"
                   text={isEdit ? "Guardar" : "Registrar Administrador"}
                   iconLeft={isEdit ? faCircleCheck : faPlus}
@@ -235,7 +328,7 @@ const AdminsPage = () => {
         </div>
       )}
 
-      {/* Header Section */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-3xl font-black uppercase tracking-tight text-white">
@@ -243,7 +336,7 @@ const AdminsPage = () => {
           </h2>
           <p className="text-white/40 text-sm mt-1">Supervisión jerárquica y control de protocolos de seguridad.</p>
         </div>
-        <Button 
+        <Button
           onClick={() => {
             resetForm();
             setShowModal(true);
@@ -255,13 +348,13 @@ const AdminsPage = () => {
         />
       </div>
 
-      {/* Table Container */}
+      {/* Table */}
       <div className="bg-[#152031] rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
         <div className="p-6 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="relative w-full md:w-96 group">
             <FontAwesomeIcon icon={faSearch} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-room-primary transition-colors" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Buscar por nombre, ID o email..."
               className="w-full bg-[#040e1f] border border-white/10 rounded-xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-room-primary/50 transition-all text-white"
               value={searchTerm}
@@ -288,10 +381,10 @@ const AdminsPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {admins.filter(a => 
-                  a.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                  (a.fullName && a.fullName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                  a.email.toLowerCase().includes(searchTerm.toLowerCase())
+                {admins.filter(a =>
+                  a.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  (a.employeeName && a.employeeName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                  a.employeeEmail.toLowerCase().includes(searchTerm.toLowerCase())
                 ).map((admin) => (
                   <tr key={admin.id} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="px-6 py-5">
@@ -300,13 +393,13 @@ const AdminsPage = () => {
                           AD
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-white uppercase tracking-tight">{admin.fullName || 'Oficial'}</p>
+                          <p className="text-sm font-bold text-white uppercase tracking-tight">{admin.employeeName || 'Oficial'}</p>
                           <p className="text-[10px] text-room-primary font-mono tracking-wider">{admin.username}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      <p className="text-[11px] text-white/60 font-medium">{admin.email}</p>
+                      <p className="text-[11px] text-white/60 font-medium">{admin.employeeEmail}</p>
                     </td>
                     <td className="px-6 py-5">
                       <span className="px-2 py-1 bg-white/5 rounded text-[10px] font-mono text-room-primary border border-white/5">
@@ -334,7 +427,7 @@ const AdminsPage = () => {
                           onClick={async () => {
                             const result = await showAlert.confirm(
                               '¿Dar de baja / Eliminar?',
-                              `¿Está seguro de eliminar al administrador ${admin.fullName || admin.username}? Esta acción no se puede deshacer.`,
+                              `¿Está seguro de eliminar al administrador ${admin.employeeName || admin.username}? Esta acción no se puede deshacer.`,
                               'Eliminar'
                             );
                             if (result.isConfirmed) {

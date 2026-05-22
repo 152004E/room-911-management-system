@@ -63,7 +63,9 @@ public class AdminLoginController {
             return ResponseEntity.ok(AdminUserDTO.builder()
                     .id(admin.getId())
                     .username(admin.getUsername())
-                    .email(admin.getEmail())
+                    .employeeEmail(admin.getEmployee() != null ? admin.getEmployee().getEmail() : null)
+                    .employeeName(admin.getEmployee() != null ? (admin.getEmployee().getFirstName() + " " + admin.getEmployee().getLastName()) : null)
+                    .role(admin.getRole())
                     .build());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

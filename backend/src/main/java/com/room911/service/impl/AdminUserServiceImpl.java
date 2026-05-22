@@ -2,9 +2,12 @@ package com.room911.service.impl;
 
 import com.room911.dto.AdminUserDTO;
 import com.room911.entity.AdminUser;
+import com.room911.entity.Employee;
 import com.room911.repository.AdminUserRepository;
+import com.room911.repository.EmployeeRepository;
 import com.room911.service.AdminUserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,7 +19,10 @@ public class AdminUserServiceImpl implements AdminUserService {
     private AdminUserRepository adminUserRepository;
 
     @Autowired
-    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private EmployeeRepository employeeRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public List<AdminUserDTO> findAll() {
@@ -35,28 +41,54 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     @Override
     public AdminUserDTO save(AdminUserDTO adminUserDTO) {
-        AdminUser adminUser = toEntity(adminUserDTO);
+        AdminUser adminUser;
         
-        // Generación automática de ID si es un usuario nuevo
-        if (adminUser.getId() == null) {
-            long count = adminUserRepository.count();
-            String nextId = String.format("A%04d", count + 1);
-            // Asegurarnos que sea único si hubo borrados
-            while (adminUserRepository.findByUsername(nextId).isPresent()) {
-                count++;
-                nextId = String.format("A%04d", count + 1);
+        Long dtoId = adminUserDTO.getId();
+        if (dtoId != null) {
+            adminUser = adminUserRepository.findById(dtoId)
+                    .orElseThrow(() -> new RuntimeException("AdminUser not found with ID: " + dtoId));
+            if (adminUserDTO.getRole() != null) {
+                adminUser.setRole(adminUserDTO.getRole());
             }
-            adminUser.setUsername(nextId);
+            adminUser.setIsActive(adminUserDTO.getIsActive());
+            if (adminUserDTO.getUsername() != null && !adminUserDTO.getUsername().trim().isEmpty()) {
+                adminUser.setUsername(adminUserDTO.getUsername());
+            }
+        } else {
+            // Creación
+            adminUser = toEntity(adminUserDTO);
+            
+            // Generación automática de username desde el nombre del empleado
+            if (adminUser.getUsername() == null || adminUser.getUsername().trim().isEmpty()) {
+                if (adminUser.getEmployee() != null) {
+                    String base = generateUsername(adminUser.getEmployee());
+                    adminUser.setUsername(base);
+                } else {
+                    long count = adminUserRepository.count();
+                    String nextId = String.format("A%04d", count + 1);
+                    while (adminUserRepository.findByUsername(nextId).isPresent()) {
+                        count++;
+                        nextId = String.format("A%04d", count + 1);
+                    }
+                    adminUser.setUsername(nextId);
+                }
+            }
+            
+            if (adminUser.getRole() == null) {
+                adminUser.setRole("ADMIN_ROOM_911");
+            }
         }
 
-        // Si tiene password (es creación o actualización de password), lo encriptamos
+        // Encriptar password si viene en el DTO
         if (adminUserDTO.getPassword() != null && !adminUserDTO.getPassword().isEmpty()) {
             adminUser.setPasswordHash(passwordEncoder.encode(adminUserDTO.getPassword()));
-        } else if (adminUser.getId() != null) {
-            // Si es actualización y no hay password, mantenemos el anterior
-            adminUserRepository.findById(adminUser.getId()).ifPresent(old -> {
-                adminUser.setPasswordHash(old.getPasswordHash());
-            });
+        } else {
+            Long existingId = adminUser.getId();
+            if (existingId != null) {
+                adminUserRepository.findById(existingId).ifPresent(old -> {
+                    adminUser.setPasswordHash(old.getPasswordHash());
+                });
+            }
         }
 
         AdminUser saved = adminUserRepository.save(adminUser);
@@ -97,28 +129,51 @@ public class AdminUserServiceImpl implements AdminUserService {
         }
     }
 
+    private String generateUsername(Employee employee) {
+        String raw = (employee.getFirstName() + "." + employee.getLastName())
+                .toLowerCase()
+                .replaceAll("[^a-z0-9.]", "");
+        String username = raw;
+        int suffix = 1;
+        while (adminUserRepository.findByUsername(username).isPresent()) {
+            suffix++;
+            username = raw + "." + suffix;
+        }
+        return username;
+    }
+
     private AdminUserDTO toDTO(AdminUser adminUser) {
-        return AdminUserDTO.builder()
+        AdminUserDTO.AdminUserDTOBuilder builder = AdminUserDTO.builder()
                 .id(adminUser.getId())
                 .username(adminUser.getUsername())
-                .email(adminUser.getEmail())
-                .fullName(adminUser.getFullName())
-                .phone(adminUser.getPhone())
                 .role(adminUser.getRole())
                 .isActive(adminUser.getIsActive())
-                .createdAt(adminUser.getCreatedAt())
-                .build();
+                .createdAt(adminUser.getCreatedAt());
+
+        if (adminUser.getEmployee() != null) {
+            Employee emp = adminUser.getEmployee();
+            builder.employeeId(emp.getId())
+                   .employeeName(emp.getFirstName() + " " + emp.getLastName())
+                   .employeeEmail(emp.getEmail());
+        }
+
+        return builder.build();
     }
 
     private AdminUser toEntity(AdminUserDTO dto) {
-        return AdminUser.builder()
+        AdminUser.AdminUserBuilder builder = AdminUser.builder()
                 .id(dto.getId())
                 .username(dto.getUsername())
-                .email(dto.getEmail())
-                .fullName(dto.getFullName())
-                .phone(dto.getPhone())
                 .role(dto.getRole())
-                .isActive(dto.getIsActive())
-                .build();
+                .isActive(dto.getIsActive());
+
+        Long empId = dto.getEmployeeId();
+        if (empId != null) {
+            Employee employee = employeeRepository.findById(empId)
+                    .orElseThrow(() -> new RuntimeException("Employee not found with ID: " + dto.getEmployeeId()));
+            builder.employee(employee);
+        }
+
+        return builder.build();
     }
 }

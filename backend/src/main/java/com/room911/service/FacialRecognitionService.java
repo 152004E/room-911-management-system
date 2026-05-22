@@ -46,6 +46,7 @@ public class FacialRecognitionService {
     /**
      * Returns null on success, or an error message string on failure.
      */
+    @SuppressWarnings("rawtypes")
     public String registerFace(Long employeeId, String imageBase64) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -80,6 +81,7 @@ public class FacialRecognitionService {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     public boolean hasFace(Long employeeId) {
         try {
             ResponseEntity<Map> response = restTemplate.getForEntity(

@@ -27,9 +27,8 @@ interface ArchivedEmployee {
 interface ArchivedAdmin {
   id: number;
   username: string;
-  email: string;
-  fullName: string;
-  phone: string;
+  employeeEmail: string;
+  employeeName: string;
   createdAt: string;
 }
 
@@ -111,8 +110,8 @@ const ArchivedItemsPage = () => {
   );
 
   const filteredAdmins = archivedAdmins.filter(a =>
-    a.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    a.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    a.employeeEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
     a.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -313,7 +312,6 @@ const ArchivedItemsPage = () => {
                     <tr className="bg-[#040e1f]/50 border-b border-white/5">
                       <th className="px-6 py-4 text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Usuario / Administrador</th>
                       <th className="px-6 py-4 text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Email</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Teléfono</th>
                       <th className="px-6 py-4 text-[10px] font-black text-white/30 uppercase tracking-[0.2em] text-right">Acciones</th>
                     </tr>
                   </thead>
@@ -326,13 +324,12 @@ const ArchivedItemsPage = () => {
                               {admin.username.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <p className="font-bold text-white text-sm">{admin.fullName || admin.username}</p>
+                              <p className="font-bold text-white text-sm">{admin.employeeName || admin.username}</p>
                               <p className="text-[10px] text-white/40">{admin.username}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-5 text-sm text-white/60">{admin.email}</td>
-                        <td className="px-6 py-5 text-sm text-white/60">{admin.phone || '-'}</td>
+                        <td className="px-6 py-5 text-sm text-white/60">{admin.employeeEmail}</td>
                         <td className="px-6 py-5 text-right">
                           <div className="flex gap-2 justify-end">
                             <button
